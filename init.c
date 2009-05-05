@@ -65,22 +65,23 @@ void test_iolib()
 
 /**
  * Global interrupt service table and GDT pointer for C routines
+ * because CS/DS are both base 0x0, so this works
  */
 u64* idt = (u64*)IDT_ADDRESS;
 u64* gdt = (u64*)GDT_ADDRESS;
 
-void install_isr_descriptor(int vector, u64 offset)
+void install_isr_descripter(int vector, u64 offset)
 {
-	if ( vector > 0 && vector < IDT_ENTRIES ) {
-		/* u64 idt_entry = ((F_386I)<<32) | (((u64)SEL_CODE)<<16); */
-		/* idt_entry |= (offset & 0xffff); */
-		/* idt_entry |= (offset << 32 ) & 0xffff000000000000ULL; */
-		/* idt[vector] = idt_entry; */
+	if ( vector >= 0 && vector < IDT_ENTRIES ) {
+		u64 idt_entry = ((F_386I)<<32) | (((u64)SEL_CODE)<<16);
+		idt_entry |= (offset & 0xffff);
+		idt_entry |= (offset << 32 ) & 0xffff000000000000ULL;
+		idt[vector] = idt_entry;
 
-		u64 idt_entry = 0x00008e0000000000ULL | (((u64)SEL_CODE)<<16);
-		idt_entry |= (offset<<32) & 0xffff000000000000ULL;
-		idt_entry |= (offset) & 0xffff;
-		idt[vector] = idt_entry;		
+		/* u64 idt_entry = 0x00008e0000000000ULL | (((u64)SEL_CODE)<<16); */
+		/* idt_entry |= (offset<<32) & 0xffff000000000000ULL; */
+		/* idt_entry |= (offset) & 0xffff; */
+		/* idt[vector] = idt_entry;		 */
 	}
 }
 
@@ -89,28 +90,15 @@ void install_isr_descriptor(int vector, u64 offset)
 
 void cpu_info() 
 {
-	/**
-EAX=00000000 EBX=00001c00 ECX=ffffffff EDX=00000000
-ESI=00000000 EDI=000002b4 EBP=00000000 ESP=000013bc
-EIP=6577005a EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
-ES =0020 000b8000 08000fff 00c0930b
-CS =0008 00000000 0004afff 00c09e00
-SS =0010 00000000 0fffffff 00c09300
-DS =0010 00000000 0fffffff 00c09300
-FS =0010 00000000 0fffffff 00c09300
-GS =0010 00000000 0fffffff 00c09300
-LDT=0000 00000000 0000ffff 00008000
-TR =0000 00000000 0000ffff 00008000
-	*/
 	uint32 eax, ebx, ecx, edx, edi, esi, ebp, esp;
-	uint16 cs, ds, es, ss, gs, fs;
 	__asm__ __volatile__ (
 		"nop \n\t"
 		: "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx), "=S"(esi), "=D"(edi)
 		);
 	
 	early_kprint( PL_ERROR, "EAX = %x EBX = %x ECX = %x EDX = %x \n", eax, ebx, ecx, edx );
-	early_kprint( PL_ERROR, "ESI = %x EDI = %x \n", esi, edi );
+	//TODO: bug! next line cause triple fault
+//	early_kprint( PL_ERROR, "ESI = %x EDI = %x \n", esi, edi );
 }
 
 /**
@@ -121,7 +109,80 @@ void do_divide_zero()
 	set_cursor(0, 5);
 	early_kprint( PL_ERROR, "divide by zero!\n" );
 	cpu_info();
+//	halt();
+}
+
+void do_nmi()
+{
+}
+
+void do_breakpoint()
+{
+}
+
+void do_overflow()
+{
+}
+
+void do_out_of_bound()
+{
+}
+
+void do_invalid_opcode()
+{
+}
+
+void do_no_coprocessor()
+{
+}
+
+void do_double_fault()
+{
+}
+
+void do_coprocessor_overrun()
+{
+}
+
+void do_bad_tss()
+{
 	halt();
+}
+
+void do_segment_not_present()
+{
+}
+
+void do_stack_exception()
+{
+}
+
+void do_gp_fault()
+{
+}
+
+void do_page_fault()
+{
+}
+
+void do_unknown_interrupt()
+{
+}
+
+void do_coprocessor_fault()
+{
+}
+
+void do_alignment_check_exception()
+{
+}
+
+void do_machine_check_exception()
+{
+}
+
+void do_reserved()
+{
 }
 
 static void setup_idt()
@@ -135,17 +196,15 @@ static void setup_idt()
 	};
 
 	int i = 0;
-	/**
-	 * because CS/DS are both base 0x0, so this works
-	 */
-	for ( i = 0; i < IDT_ENTRIES; i++ )	
-		install_isr_descriptor(0, (uint32)divide_zero);
+	for ( i = 0; i < 1; i++ )	
+		install_isr_descripter( i, (uint32)divide_zero );
 	
 	/* for ( i = 0; i < PRESERVED_ISRS; i++ ) */
 	/* 	install_isr_descriptor(i, isr[i]); */
 
-	for ( i = 1 ; i < IDT_ENTRIES; i++ )
-		install_isr_descriptor(i, (uint32)default_isr );
+	for (; i < IDT_ENTRIES; i++ )
+		install_isr_descripter( i, (uint32)default_isr );
+
 	
 	__asm__ __volatile__ (
 		"lidt %0 \n\t"
@@ -188,8 +247,6 @@ void init_pic()
 
 void init()
 {
-//	test_io2();
-//	test_iolib();
 	setup_idt();
 	init_pic();
 

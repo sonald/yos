@@ -39,6 +39,7 @@
 
 #define SEL_CODE           0x08 + RPL_0
 #define SEL_DATA           0x10 + RPL_0
+#define SEL_VIDEO          0x20 + RPL_0
 
 typedef unsigned long long u64;
 

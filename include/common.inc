@@ -93,27 +93,5 @@
 1:	nop
 	.endm
 
-	.macro display_str_pm video_selector, str, r = 0, c = 0
-	xorw %ax, %ax
-	movw %ax, %ds
-	movw \str, %si
-
-	movw \video_selector, %ax
-	movw %ax, %es
-	
-	// calculate coordinate
-	xorw %di, %di
-	mov $(\r*80 + \c)<<1, %di
-	movb $0x07, %al
-	cld
-1:	
-	cmp $0, (%si)
-	je 1f
-
-	movsb
-	stosb
-	jmp 1b
-1:	nop
-	.endm
 	
 	
