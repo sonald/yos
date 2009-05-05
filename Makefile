@@ -45,4 +45,4 @@ common.inc:
 .PHONY:	clean
 
 clean:
-	rm bootsect kernel.img *.o
+	rm bootsect kernel.img *.o kernel.img.S kernel.dbg 
