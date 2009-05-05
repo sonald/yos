@@ -45,4 +45,5 @@ common.inc:
 .PHONY:	clean
 
 clean:
-	rm bootsect kernel.img *.o kernel.img.S kernel.dbg 
+	-rm bootsect kernel.img *.o kernel.img.S kernel.dbg kernel.elf unittest *.map kernel
+
