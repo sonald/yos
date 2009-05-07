@@ -1,6 +1,20 @@
 // ISRs
 	.section .text
 	.global divide_zero
+	.global debug_exception
+	.global nmi
+	.global breakpoint
+	.global overflow
+	.global out_of_bound
+	.global invalid_opcode
+	.global no_coprocessor
+	.global double_fault
+	.global coprocessor_overrun
+
+	.global bad_tss
+	.global segment_not_present
+	.global stack_exception
+	
 	.global default_isr
 	.code32
 
@@ -48,10 +62,6 @@ Exception #  	 Description  	 Error Code?
 	define_isr no_coprocessor, 7, 0
 	define_isr double_fault, 8, 1
 	define_isr coprocessor_overrun, 9, 0
-
-bad_tss:
-	pushl $10
-	jmp isr_common
 	
 /*	define_isr bad_tss, 10, 1
 	define_isr segment_not_present, 11, 1

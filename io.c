@@ -100,18 +100,28 @@ char* early_itos(int i, int base)
 	if ( !goon )
 		return NULL;
 
+	int minus = (i >= 0) ? 0: 1;
+	int absolute = abs(i);
+	
 	char buf[BUF_SIZE] = {0};
 	memset(__early_buf, 0, BUF_SIZE);
 	
-	int divider = i, remainder = 0;
+	int divider = absolute, remainder = 0;
 	char *p = buf;
 	*p = '0';
-	while ( divider ) {
+	
+	/* while ( divider ) { */
+	/* 	remainder = divider%base; */
+	/* 	divider = divider/base; */
+	/* 	*p++ = "0123456789ABCDEF"[remainder]; */
+	/* } */
+
+	do {
 		remainder = divider%base;
 		divider = divider/base;
 		*p++ = "0123456789ABCDEF"[remainder];
-	}
-
+	} while ( divider );
+	
 	// check overflow
 	if ( p - buf > BUF_SIZE )
 		return NULL;
@@ -119,8 +129,13 @@ char* early_itos(int i, int base)
 	if ( p == buf ) {
 		return NULL;
 	} else {
+		if ( minus ) {
+			*p++ = '-';
+			*p = '\0';
+		}
+
 		char *q = __early_buf;
-		while ( p >= buf ) {
+		while ( p > buf ) {
 			*q++ = *--p;
 		}
 		*q = 0;
@@ -130,6 +145,9 @@ char* early_itos(int i, int base)
 
 void early_strncpy(char* dest, const char *src, uint16 length)
 {
+	if ( length == 0 )
+		return;
+	
 	uint16 size = min(length, early_strlen(src));
 	/* uint16 i = 0; */
 	/* while ( i++ < size && *src != 0 ) */
@@ -150,6 +168,9 @@ void early_strncpy(char* dest, const char *src, uint16 length)
 
 int early_strlen(const char* s)
 {
+	if ( s == NULL )
+		return 0;
+	
 	int len = 0;
 	while ( *s++ ) len++;
 	return len;

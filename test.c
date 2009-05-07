@@ -33,5 +33,15 @@ int main(int argc, char* argv[])
 	
 	printf("%s(%d)\n", __early_print_buf, prted);
 
+	uint32 eax, ebx, ecx, edx, edi, esi;
+
+	esi = 0, edi = -3;
+	prted = early_kprint( PL_ERROR, "ESI = %x EDI= %x \n", esi, edi );
+	printf("%s(%d)\n", __early_print_buf, prted);
+
+	edx = 0;
+	prted = early_kprint( PL_ERROR, "EAX = %x EBX = %x ECX = %x EDX = %x \n", eax, ebx, ecx, edx );
+	printf("%s(%d)\n", __early_print_buf, prted);
+	
 	return 0;
 }

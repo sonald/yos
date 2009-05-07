@@ -17,6 +17,8 @@ typedef unsigned long uint32;
 			_a > _b ? _a : _b;						\
 		})
 
+#define abs(i) ( (i) > 0 ? i : -(i) )
+
 #define __likely(e)  __builtin_expect(!!(e), 1)
 #define __unlikely(e)  __builtin_expect(!!(e), 0)
 

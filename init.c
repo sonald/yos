@@ -90,15 +90,19 @@ void install_isr_descripter(int vector, u64 offset)
 
 void cpu_info() 
 {
-	uint32 eax, ebx, ecx, edx, edi, esi, ebp, esp;
+	uint32 eax, ebx, ecx, edx, edi, esi;
 	__asm__ __volatile__ (
 		"nop \n\t"
 		: "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx), "=S"(esi), "=D"(edi)
 		);
+
+	early_kprint( PL_ERROR, "ESI = %x EDI= %x \n", esi, edi );
+//	early_kprint( PL_ERROR, "ax = %x\n", eax );
+//	early_kprint( PL_ERROR, "bx = %x\n", ebx );
+//	early_kprint( PL_ERROR, "cx = %x\n", ecx );
+//	early_kprint( PL_ERROR, "dx = %x\n", edx );
 	
-	early_kprint( PL_ERROR, "EAX = %x EBX = %x ECX = %x EDX = %x \n", eax, ebx, ecx, edx );
-	//TODO: bug! next line cause triple fault
-//	early_kprint( PL_ERROR, "ESI = %x EDI = %x \n", esi, edi );
+//	early_kprint( PL_ERROR, "EAX = %x EBX = %x ECX = %x EDX = %x \n", eax, ebx, ecx, edx );
 }
 
 /**
@@ -109,7 +113,7 @@ void do_divide_zero()
 	set_cursor(0, 5);
 	early_kprint( PL_ERROR, "divide by zero!\n" );
 	cpu_info();
-//	halt();
+	halt();
 }
 
 void do_nmi()
