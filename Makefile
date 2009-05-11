@@ -10,7 +10,7 @@ all: kernel.img unittest
 
 kernel.img: bootsect kernel
 	$(CAT) bootsect kernel > $@
-	$(DD) if=/dev/zero of=$@ seek=10 count=2807
+	$(DD) if=/dev/zero of=$@ seek=16 count=2801
 
 unittest: test.c io.c
 	$(CC) -g -Wall -fno-builtin -D_YOS_LIBTEST -o $@ $^ -I./include
@@ -25,13 +25,13 @@ kernel: kernel.o isr.o io.o init.o
 	objcopy --only-keep-debug kernel.elf kernel.dbg
 
 kernel.o: kernel.s 
-	$(AS) -g -a -o $@ $< > $<.map
+	$(AS) -a -o $@ $< > $<.map
 
 bootsect.o: bootsect.s 
-	$(AS) -g -a -o $@ $< > $<.map
+	$(AS) -a -o $@ $< > $<.map
 
 isr.o: isr.s 
-	$(AS) -g -a -o $@ $< > $<.map
+	$(AS) -a -o $@ $< > $<.map
 
 %.o: %.c common.h 
 	$(CC) $(CFLAGS) -c -o $@ $<

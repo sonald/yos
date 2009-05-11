@@ -77,116 +77,162 @@ void install_isr_descripter(int vector, u64 offset)
 		idt_entry |= (offset & 0xffff);
 		idt_entry |= (offset << 32 ) & 0xffff000000000000ULL;
 		idt[vector] = idt_entry;
-
-		/* u64 idt_entry = 0x00008e0000000000ULL | (((u64)SEL_CODE)<<16); */
-		/* idt_entry |= (offset<<32) & 0xffff000000000000ULL; */
-		/* idt_entry |= (offset) & 0xffff; */
-		/* idt[vector] = idt_entry;		 */
 	}
 }
 
-
 //Note that only exceptions 8 and 10-14 have an error code
-
-void cpu_info() 
+// dummy is actually %ebp pushed from cpu_info caller, so is ret_ip
+void cpu_info(PRINT_LEVEL lvl, uint32 dummy, uint32 ret_ip, uint32 ss, uint32 fs,
+			  uint32 es, uint32 gs, uint32 ds, uint32 edi, uint32 esi, uint32 ebp,
+			  uint32 esp, uint32 ebx, uint32 edx, uint32 ecx, uint32 eax, uint32 isr,
+			  uint32 errno, uint32 eip, uint32 cs, uint32 eflags, uint32 old_esp,
+			  uint32 old_ss )
 {
-	uint32 eax, ebx, ecx, edx, edi, esi;
-	__asm__ __volatile__ (
-		"nop \n\t"
-		: "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx), "=S"(esi), "=D"(edi)
-		);
+	dummy = dummy;
+	ret_ip = ret_ip;
+	static char *exception_msgs[] = {
+		"Division By Zero Exception",
+		"Debug Exception",
+		"Non Maskable Interrupt Exception",
+		"Breakpoint Exception",
+		"Into Detected Overflow Exception",
+		"Out of Bounds Exception",
+		"Invalid Opcode Exception",
+		"No Coprocessor Exception",
+		"Double Fault Exception",
+		"Coprocessor Segment Overrun Exception",
+		"Bad TSS Exception",
+		"Segment Not Present Exception",
+		"Stack Fault Exception",
+		"General Protection Fault Exception",
+		"Page Fault Exception",
+		"Unknown Interrupt Exception",
+		"Coprocessor Fault Exception",
+		"Alignment Check Exception (486+)",
+		"Machine Check Exception (Pentium/586+)",
+		"Reserved"
+	};
 
-	early_kprint( PL_ERROR, "ESI = %x EDI= %x \n", esi, edi );
-//	early_kprint( PL_ERROR, "ax = %x\n", eax );
-//	early_kprint( PL_ERROR, "bx = %x\n", ebx );
-//	early_kprint( PL_ERROR, "cx = %x\n", ecx );
-//	early_kprint( PL_ERROR, "dx = %x\n", edx );
-	
-//	early_kprint( PL_ERROR, "EAX = %x EBX = %x ECX = %x EDX = %x \n", eax, ebx, ecx, edx );
+	char *err_info = isr<20 ? exception_msgs[isr]
+		: ( isr<32 ? "Reserved" : "User Interrupt" );
+	early_kprint( lvl, "%s(errcode: %x)\n", err_info, errno );
+	early_kprint( lvl, "eax:%x ebx:%x ecx:%x edx:%x\nesi:%x edi:%x ebp:%x esp:%x\n",
+				  eax, ebx, ecx, edx, esi, edi, ebp, esp );
+	early_kprint( lvl, "CS:%x EIP:%x\n", cs, eip );
+	early_kprint( lvl, "DS:%x ES:%x SS:%x GS:%x FS:%x\n", ds, es, ss, gs, fs );
 }
+
+#define TMP_COMMON_HANDLER 	{					\
+		__asm__ __volatile__ (					\
+			"pushl %%eax  \n\t"					\
+			"call cpu_info \n\t"				\
+			:: "a"(PL_ERROR)					\
+			);									\
+		halt();									\
+	}	
+		
 
 /**
  * exception handlers called from corresponding ISR
  */
 void do_divide_zero()
 {
-	set_cursor(0, 5);
-	early_kprint( PL_ERROR, "divide by zero!\n" );
-	cpu_info();
-	halt();
+	TMP_COMMON_HANDLER
+}
+
+void do_debug_exception()
+{
+	TMP_COMMON_HANDLER
 }
 
 void do_nmi()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_breakpoint()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_overflow()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_out_of_bound()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_invalid_opcode()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_no_coprocessor()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_double_fault()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_coprocessor_overrun()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_bad_tss()
 {
-	halt();
+	TMP_COMMON_HANDLER
 }
 
 void do_segment_not_present()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_stack_exception()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_gp_fault()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_page_fault()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_unknown_interrupt()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_coprocessor_fault()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_alignment_check_exception()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_machine_check_exception()
 {
+	TMP_COMMON_HANDLER
 }
 
 void do_reserved()
 {
+	TMP_COMMON_HANDLER
 }
 
 static void setup_idt()
@@ -200,11 +246,11 @@ static void setup_idt()
 	};
 
 	int i = 0;
-	for ( i = 0; i < 1; i++ )	
-		install_isr_descripter( i, (uint32)divide_zero );
-	
-	/* for ( i = 0; i < PRESERVED_ISRS; i++ ) */
-	/* 	install_isr_descriptor(i, isr[i]); */
+	/* for ( i = 0; i < 1; i++ ) */
+	/* 	install_isr_descripter( i, (uint32)divide_zero ); */
+
+	for ( i = 0; i < PRESERVED_ISRS; i++ )
+		install_isr_descripter( i, (u64)(isr[i<<1]) );
 
 	for (; i < IDT_ENTRIES; i++ )
 		install_isr_descripter( i, (uint32)default_isr );
@@ -254,6 +300,13 @@ void init()
 	setup_idt();
 	init_pic();
 
+	__asm__ __volatile__ ( " sti \n\t" );
+	
+//	while(1);
+	
 	int d = 10, i = 0;
-	d = d / i;
+//	d = d / i;
+
+	early_kprint( PL_INFO, "after exception\n" );
+	
 }

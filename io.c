@@ -149,6 +149,10 @@ void early_strncpy(char* dest, const char *src, uint16 length)
 		return;
 	
 	uint16 size = min(length, early_strlen(src));
+
+	if ( size == 0 )
+		return;
+	
 	/* uint16 i = 0; */
 	/* while ( i++ < size && *src != 0 ) */
 	/* 	*dest++ = *src++; */
@@ -249,7 +253,9 @@ int early_kprint(PRINT_LEVEL lvl, const char* fmt, ...)
 
 #ifndef _YOS_LIBTEST
 	for ( i = 0; i < printed_chars; i++ ) {
-		early_video_putc( *((char*)__early_print_buf + i), __default_color_scheme[lvl] );
+		char c = *((char*)__early_print_buf + i);
+		if ( c ) 
+			early_video_putc( c, __default_color_scheme[lvl] );
 	}
 #endif
 	
@@ -333,15 +339,11 @@ void forward_cursor()
 	}
 }
 
-void soft_draw_cursor();
-
 // this routine assumes that %es is the video segment selector
 void early_video_putc(char c, print_level_color_t color)
 {
 	char attr = (color.fg & 0x0f) | ((color.bg<<4) & 0xf0);
-	int x = 0, y = 0;
-	get_cursor(&x, &y);
-
+	
 	switch( c ) {
 	case '\n':
 		screen_x = 0;
@@ -381,30 +383,10 @@ void early_video_putc(char c, print_level_color_t color)
 			"movb %%cl, %%es: (%%esi) \n\t"
 			"popa                     \n\t"
 			:
-			: "b"(c), "c"(attr), "a"(x), "d"(y)
+			: "b"(c), "c"(attr), "a"(screen_x), "d"(screen_y)
 			: "esi"
 			);
-		forward_cursor();	
+		forward_cursor();
 		break;
 	}
-//	soft_draw_cursor();
-}
-
-void soft_draw_cursor() 
-{
-	__asm__ __volatile__ (
-		"pusha                    \n\t"
-		"xorl %%esi, %%esi        \n\t"
-		"imull $80, %%edx         \n\t"
-		"add %%eax, %%edx         \n\t"
-		"mov %%edx, %%esi         \n\t"
-		"shll $1, %%esi           \n\t"
-		"movb %%bl, %%es: (%%esi) \n\t"
-		"inc %%esi                \n\t"
-		"movb %%cl, %%es: (%%esi) \n\t"
-		"popa                     \n\t"
-		:
-		: "b"(CURSOR_SHAPE), "c"(CURSOR_ATTR), "a"(screen_x), "d"(screen_y)
-		: "esi"
-		);	
 }

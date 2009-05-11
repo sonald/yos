@@ -42,6 +42,6 @@ int main(int argc, char* argv[])
 	edx = 0;
 	prted = early_kprint( PL_ERROR, "EAX = %x EBX = %x ECX = %x EDX = %x \n", eax, ebx, ecx, edx );
 	printf("%s(%d)\n", __early_print_buf, prted);
-	
+
 	return 0;
 }

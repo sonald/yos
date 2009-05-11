@@ -146,13 +146,6 @@ _code32:
 	call init
 1:	jmp 1b	
 	
-	movl	$2, %esi
-	movb	$'M', %es: (%esi)
-	inc 	%esi
-	movb	$0x7, (%esi)
-	
-1:	jmp 1b
-	
 	.set _code32_size , . - _code32
 
 	

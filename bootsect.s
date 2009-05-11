@@ -36,6 +36,7 @@ _code:
 	display_str $msg, 0, 0
 
 	call load_kernel
+	
 	//move kernel to 0:0
 	mov	$0x8000, %si
 	mov 	$KERNEL_ADDRESS, %ax

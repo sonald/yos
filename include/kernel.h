@@ -43,9 +43,6 @@
 
 typedef unsigned long long u64;
 
-#define PRESERVED_ISRS     32
-
-
 #define halt() __asm__ __volatile__ ( "hlt \n\t" )
 
 #define cli()  __asm__ __volatile__ ( "cli \n\t" )
