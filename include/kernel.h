@@ -47,5 +47,9 @@ typedef unsigned long long u64;
 
 #define cli()  __asm__ __volatile__ ( "cli \n\t" )
 #define sti()  __asm__ __volatile__ ( "sti \n\t" )
+
+// interrupt corresponding
+#define HZ  100
+
 #endif
 	 

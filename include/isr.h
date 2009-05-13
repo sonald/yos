@@ -24,23 +24,28 @@ extern void coprocessor_fault();
 extern void alignment_check_exception();
 extern void machine_check_exception();
 
+extern void timer();
+
 extern void default_isr();
 
 #define PRESERVED_ISRS     32
 
 extern void (*isr[PRESERVED_ISRS<<1])();
 
-struct __regs 
-{
-	uint32 eax, ecx, edx, ebx, esp, ebp, esi, edi;
-	uint32 ds, gs, es, fs, ss;
-};
+#define MASTER_PIC  0x20
+#define SLAVE_PIC   0x28
 
-struct __exception_stack_frame
-{
-	uint32 ss, fs, es, gs, ds;
-	uint32 edi, esi, ebp, esp, ebx, edx, ecx, eax;
-	uint32 isr, errno, eip, cs, eflags, old_esp, old_ss;
-};
-	
+#define IRQ_TIMER            MASTER_PIC+0
+#define IRQ_PS2_KBD          MASTER_PIC+1
+
+#define IRQ_COMM2            MASTER_PIC+3
+#define IRQ_COMM1            MASTER_PIC+4
+#define IRQ_LPT2             MASTER_PIC+5
+#define IRQ_FLOPPY           MASTER_PIC+6
+#define IRQ_LPT1             MASTER_PIC+7
+
+#define IRQ_RTC              SLAVE_PIC+0
+#define PS2_MOUSE            SLAVE_PIC+4
+#define IRQ_PPU_EXCEPTION    SLAVE_PIC+5
+
 #endif

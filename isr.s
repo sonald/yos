@@ -21,6 +21,8 @@
 	.global alignment_check_exception
 	.global machine_check_exception
 
+	.global timer
+	
 	.global default_isr
 	.global isr
 	
@@ -93,8 +95,8 @@
 	define_isr reserved_29, 29, 0
 	define_isr reserved_30, 30, 0	
 	define_isr reserved_31, 31, 0
-	define_isr reserved_32, 32, 0	
 	
+	define_isr timer, 32, 0
 
 isr:
 	.4byte 	divide_zero,  			do_divide_zero
@@ -130,7 +132,7 @@ isr:
 	.4byte reserved_29, 			do_reserved
 	.4byte reserved_30, 			do_reserved
 	.4byte reserved_31, 			do_reserved
-	.4byte reserved_32, 			do_reserved
+	.4byte timer,				do_timer
 	
 isr_common:
 	/**

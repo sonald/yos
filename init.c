@@ -1,6 +1,7 @@
 #include <io.h>
 #include <kernel.h>
 #include <isr.h>
+#include <timer.h>
 
 //////////////////////////////  testing routines  //////////////////////////////
 
@@ -246,15 +247,11 @@ static void setup_idt()
 	};
 
 	int i = 0;
-	/* for ( i = 0; i < 1; i++ ) */
-	/* 	install_isr_descripter( i, (uint32)divide_zero ); */
-
 	for ( i = 0; i < PRESERVED_ISRS; i++ )
 		install_isr_descripter( i, (u64)(isr[i<<1]) );
 
 	for (; i < IDT_ENTRIES; i++ )
 		install_isr_descripter( i, (uint32)default_isr );
-
 	
 	__asm__ __volatile__ (
 		"lidt %0 \n\t"
@@ -307,6 +304,30 @@ void init()
 	int d = 10, i = 0;
 //	d = d / i;
 
-	early_kprint( PL_INFO, "after exception\n" );
+
+
+	init_8254_timer();
+	install_isr_descripter( IRQ_TIMER, (uint32)timer );
+	sti();
+
 	
+	early_kprint( PL_INFO, "after timer\n" );
+
+	i = 0;
+	int x = 0, y = 0;
+	char busy[] = "|/-\\";
+	while(1) {
+		get_cursor( &x, &y );
+		set_cursor( 0, 10 );
+//		early_kprint( PL_WARN, "%c", busy[i] );
+		u64 tick = jiffies;
+		if ( (tick % 18) == 0 )
+			early_kprint( PL_WARN, "%d", i );
+//		i = (i + 1) % 4;
+		i++;
+		
+		set_cursor( x, y );
+	}
+	
+	early_kprint( PL_INFO, "after while\n" );
 }

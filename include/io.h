@@ -35,9 +35,6 @@ typedef struct print_level_color_
 #define VIDEO_COLUMNS 80
 #define VIDEO_ROWS    25
 
-//extern int screen_x;
-//extern int screen_y;
-
 #define BUF_SIZE 1024
 
 __attribute__((unused)) static int __last_request_type_size = 0;
@@ -97,11 +94,9 @@ void* memmove(void* dest, const void* src, uint32 size);
 
 #define inb(port) ({													\
 			unsigned char __ret = 0;									\
-			__asm__ __volatile__ ( "inb %%dl, %%al \n\t"				\
-								   : "=a"(ret) :"dl"(port) :"eax" );	\
+			__asm__ __volatile__ ( "inb %%dx, %%al \n\t"				\
+								   : "=a"(__ret) :"dx"(port)  );		\
 			__ret;														\
 		})
 
-#define MASTER_PIC  0x20
-#define SLAVE_PIC   0x28
 #endif
