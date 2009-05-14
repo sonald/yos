@@ -1,7 +1,7 @@
 // contains some global definition
 	.set SECTOR_SIZE, 0x200		/* 512 */
 	.set KERNEL_ADDRESS, 0		/* kernel base */
-	.set NUM_SECTORS, 0x12		/* kernel size in sectors */
+	.set NUM_SECTORS, 20		/* kernel size in sectors */
 	.set KERNEL_STACK_SIZE, 0x800 	/* default: 2K */
 
 	.set IDT_ADDRESS, 0x90000	/* base address of IDT */	

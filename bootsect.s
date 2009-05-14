@@ -20,7 +20,7 @@ msg:
 msg2:
 	.string "load success, now executing ......\x0"
 num_read:  /* record number of sectors read */
-	.byte 0x0
+	.2byte 0x00
 
 _code:
 	mov %cs, %ax
@@ -36,49 +36,61 @@ _code:
 	display_str $msg, 0, 0
 
 	call load_kernel
-	
+
 	//move kernel to 0:0
+	xorl 	%esi, %esi
 	mov	$0x8000, %si
 	mov 	$KERNEL_ADDRESS, %ax
 	mov	%ax, %es
 	xor	%di, %di
 	
 	xor	%cx, %cx
-	mov	$NUM_SECTORS<<9, %cx
+	mov	$NUM_SECTORS<<7, %cx
 	cld
 1:	
 	cmp 	$0, %cx
 	je 	1f
-
-	movsb
-	dec %cx
-	
-	jmp 	1b
-1:	nop
+	rep	movsl
 	
 	display_str $msg2, 1, 0
 
 	jmp $0,$KERNEL_ADDRESS
 1:	jmp 1b	
 
-	
+
+	// in: ax LBA #sector, should convert to sector/cylinder/head
 read_sector:
-	push %bp
-	movw %sp, %bp
+        pushw   %ax
+        pushw   %cx
+        pushw   %dx
+        pushw   %bx
 
-retry:	
-	movb $0, %ch 	/* cylinder */
-	movb $0, %dh    /* # head */
-	movb $0, %dl	/* # driver */
-	movb $1, %al   	/* n_sectors */
-	movb $0x02, %ah
-	int $0x13
-
-	jc retry
+        movw    %si,    %ax       
+        xorw    %dx,    %dx
+        movw    $18,    %bx    /* 18 sectors per track for floppy disk */
 	
-	movw %bp, %sp
-	pop %bp
-	ret
+        divw    %bx  		/* ax / dx -> ax (Quo) , dx (Rem) */
+        incw    %dx
+        movb    %dl,    %cl    /* cl=sector number */
+
+	movb	%al,	%ch
+	shr	$1,	%ch  	/* track(cylinder) */
+	andb	$1, 	%al
+	movb	%al,	%dh	/* head */
+	
+	xorb	%dl, 	%dl	/* driver */
+	popw	%bx
+	
+retry:
+        movb    $0x1,   %al    /* read 1 sector */
+        movb    $0x2,   %ah
+        int     $0x13
+        jc      retry
+	
+        popw    %dx
+        popw    %cx
+        popw    %ax
+        ret
 	
 load_kernel:
 	push %bp
@@ -87,21 +99,20 @@ load_kernel:
 	// reset disk
 	movb $0, %ah
 	int $0x13
-	
-	movb $2, %cl
 
 	movw $0x800, %ax
 	movw %ax, %es
-	movw $0, %bx
-1:
+	xorw %bx, %bx
+	
+	movw $NUM_SECTORS, %cx
+	movw $1, %si     /* 0 is boot sector	*/
+goon:	
 	call read_sector
-	inc %cl
-	addw $512, %bx
+        addw    $512,    %bx
+        incw    %si
+        loop    goon
 
-	cmpb $NUM_SECTORS, %cl
-	jl 1b
-
-	movb %cl, num_read
+	movw %si, num_read
 	
 	movw %bp, %sp
 	pop %bp

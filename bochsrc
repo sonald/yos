@@ -1,4 +1,4 @@
-#gdbstub: enabled=1, port=1234, text_base=0 data_base=0, bss_base=0
+gdbstub: enabled=1, port=1234, text_base=0 data_base=0, bss_base=0
 #config_interface: wx
 #display_library: wx
 
@@ -10,3 +10,10 @@ ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
 boot: floppy
 log: bochsout.txt
 mouse: enabled=1
+
+panic: action=ask
+error: action=report
+info: action=report
+debug: action=ignore
+#pass: action=fatal
+

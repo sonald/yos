@@ -1,6 +1,8 @@
 #ifndef _kernel_h
 #define _kernel_h
 
+#include <common.h>
+
 #define SECTOR_SIZE        0x200
 
 /* kernel base */
@@ -50,6 +52,7 @@ typedef unsigned long long u64;
 
 // interrupt corresponding
 #define HZ  100
+extern uint32 jiffies;
 
 #endif
 	 

@@ -1,7 +1,7 @@
 /**
  * Timer interrupt
  */
-
+#include <kernel.h>
 #include <isr.h>
 #include <timer.h>
 #include <io.h>
@@ -10,7 +10,6 @@ void init_8254_timer()
 {
 	unsigned int divisor = TIMER_FREQ/HZ;
 	outb( TIMER_CHANNEL_0+ACCESS_LO_HI+TIMER_MODE_3, TIMER_OPER_PORT );
-//	outb( 0x36, TIMER_OPER_PORT );
 	outb( divisor & 0xff, 0x40 );
 	outb( divisor >> 8, 0x40 );
 
@@ -19,7 +18,7 @@ void init_8254_timer()
 	outb( imf & 0xfe, 0x21 );
 }
 
-u64 jiffies = 0;
+uint32 jiffies = 0;
 
 void do_timer()
 {

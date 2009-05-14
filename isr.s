@@ -21,7 +21,9 @@
 	.global alignment_check_exception
 	.global machine_check_exception
 
+	// IRQs
 	.global timer
+	.global keyboard_handler
 	
 	.global default_isr
 	.global isr
@@ -97,6 +99,7 @@
 	define_isr reserved_31, 31, 0
 	
 	define_isr timer, 32, 0
+	define_isr keyboard_handler, 33, 0	
 
 isr:
 	.4byte 	divide_zero,  			do_divide_zero
@@ -132,8 +135,9 @@ isr:
 	.4byte reserved_29, 			do_reserved
 	.4byte reserved_30, 			do_reserved
 	.4byte reserved_31, 			do_reserved
+
 	.4byte timer,				do_timer
-	
+	.4byte keyboard_handler,		do_keyboard
 isr_common:
 	/**
 	stack order of isr:

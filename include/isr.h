@@ -25,10 +25,12 @@ extern void alignment_check_exception();
 extern void machine_check_exception();
 
 extern void timer();
+extern void keyboard_handler();
 
 extern void default_isr();
 
-#define PRESERVED_ISRS     32
+// 32 exceptions and IRQ0 IRQ1
+#define PRESERVED_ISRS     (32+2)
 
 extern void (*isr[PRESERVED_ISRS<<1])();
 
