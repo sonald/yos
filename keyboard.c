@@ -55,7 +55,7 @@ void do_process_printable(struct kbd_state_struct kbd, byte code)
 		{00, 00}, {00, 00}, {'1', '!'}, {'2', '@'}, {'3', '#'}, {'4', '$'}, {'5', '%'}, {'6', '^'},
 		{'7', '&'}, {'8', '*'}, {'9', '('}, {'0', ')'}, {'-', '_'}, {'=', '+'}, {'\b', '\b'}, {'\t', '\t'},
 		{'q', 'Q'}, {'w', 'W'}, {'e', 'E'}, {'r', 'R'}, {'t', 'T'}, {'y', 'Y'}, {'u', 'U'}, {'i', 'I'},
-		{'o', 'O'}, {'p', 'P'}, {'[', '{'}, {']', '}'}, {'\n', '\n'}, {00, 00}, {'a', 'A'}, {'s', 's'},
+		{'o', 'O'}, {'p', 'P'}, {'[', '{'}, {']', '}'}, {'\n', '\n'}, {00, 00}, {'a', 'A'}, {'s', 'S'},
 		{'d', 'D'}, {'f', 'F'}, {'g', 'G'}, {'h', 'H'}, {'j', 'J'}, {'k', 'K'}, {'l', 'L'}, {';', ':'},
 		{'\'', '\"'}, {'`', '~'}, {0, 0}, {'\\', '|'}, {'z', 'Z'}, {'x', 'X'}, {'c', 'C'}, {'v', 'V'},
 		{'b', 'B'}, {'n', 'N'}, {'m', 'M'}, {',', '<'}, {'.', '>'}, {'/', '?'}, {00, 00}, {'*', '*'},
@@ -68,6 +68,8 @@ void do_process_printable(struct kbd_state_struct kbd, byte code)
 		return;
 	}
 
+//	early_kprint( PL_DEBUG, "code: %d\n", code );
+	
 	if ( kbd.shift_down ) {
 		c = char_map[code][1];
 		if ( c )
@@ -81,10 +83,12 @@ void do_process_printable(struct kbd_state_struct kbd, byte code)
 
 void do_process_unprintable(struct kbd_state_struct kbd, byte code)
 {
+	early_kprint( PL_DEBUG, "do_process_unprintable not implemented\n" );	
 }
 
 void do_process_function(struct kbd_state_struct kbd, byte code)
 {
+	early_kprint( PL_DEBUG, "do_process_function not implemented\n" );
 }
 
 void do_keyboard()
@@ -95,7 +99,7 @@ make codes(break codes: +0x80 ) :
 07 	6^ 		08 	7& 		09 	8* 		0A 	9( 		0B 	0) 		0C 	-_
 0D 	=+ 		0E 	BCK 	0F 	TAB 	10 	qQ 		11 	wW 		12 	eE
 13 	rR 		14 	tT 		15 	yY 		16 	uU 		17 	iI 		18 	oO
-19 	pP 		1A 	[{ 		1B 	]} 	1C 	Enter 	1D 	LCTL 	1E 	aA
+19 	pP 		1A 	[{ 		1B 	]} 	    1C 	Enter 	1D 	LCTL 	1E 	aA
 1F 	sS 		20 	dD 		21 	fF 		22 	gG 		23 	hH 		24  jJ
 25 	kK 		26 	lL 		27 	;: 		28 	'" 		29 	`~ 	2A 	LSHT
 2B 	\| 		2C 	zZ 		2D 	xX 		2E 	cC 		2F 	vV 		30 	bB
@@ -111,7 +115,7 @@ make codes(break codes: +0x80 ) :
 	/*0x0 */    unp, unp, prt, prt, prt, prt, prt, prt,	 
 	/*0x8 */	prt, prt, prt, prt, prt, prt, unp, prt,	 
 	/*0x10*/	prt, prt, prt, prt, prt, prt, prt, prt,	 
-	/*0x18*/	prt, prt, prt, prt, unp, unp, prt, prt,	 
+	/*0x18*/	prt, prt, prt, prt, prt, unp, prt, prt,	 
 	/*0x20*/	prt, prt, prt, prt, prt, prt, prt, prt,	 
 	/*0x28*/	prt, prt, unp, prt, prt, prt, prt, prt,	 
 	/*0x30*/	prt, prt, prt, prt, prt, prt, unp, prt,	 
@@ -129,6 +133,7 @@ make codes(break codes: +0x80 ) :
 	
 	byte scancode = 0;
 	scancode = inb( 0x60 );
+//	early_kprint( PL_DEBUG, "scancode: %d\n", scancode );
 	
 	if ( kbd_state.escaped ) {
 		switch ( scancode ) {
@@ -137,9 +142,13 @@ make codes(break codes: +0x80 ) :
 			break;
 			
 		case 0x1d:
-			kbd_state.ctrl_down = 1; kbd_state.left = 0; break;
+			kbd_state.ctrl_down = 1; kbd_state.left = 0;
+			break;
+			
 		case 0x38:
-			kbd_state.alt_down = 1; kbd_state.left = 0; break;
+			kbd_state.alt_down = 1; kbd_state.left = 0;
+			break;
+			
 		case 0x36:
 			// fake rshift
 		case 0x2a:
@@ -158,14 +167,33 @@ make codes(break codes: +0x80 ) :
 			break;
 			
 		case 0xe0:
-			kbd_state.escaped = 1; break;
+			kbd_state.escaped = 1;
+			break;
+			
 		case 0x2a: case 0x36:
-			kbd_state.shift_down = 1; break;
+			kbd_state.shift_down = 1;
+			break;
+			
+		case 0x2a+0x80: case 0x36+0x80:
+			kbd_state.shift_down = 0;
+			break;
+			
 		case 0x1d:
-			kbd_state.ctrl_down = 1; kbd_state.left = 1; break;
-		case 0x38:
-			kbd_state.alt_down = 1; kbd_state.left = 1; break;
+			kbd_state.ctrl_down = 1; kbd_state.left = 1;
+			break;
 
+		case 0x1d+80:
+			kbd_state.ctrl_down = 0;
+			break;
+			
+		case 0x38:
+			kbd_state.alt_down = 1; kbd_state.left = 1;
+			break;
+
+		case 0x38+0x80:
+			kbd_state.alt_down = 0;
+			break;
+			
 		default:
 			dispatch_table[scancode&0x7f](kbd_state, scancode);
 			break;
