@@ -13,7 +13,6 @@ _code:
 kern_welcome:
 	.asciz "welcome to yos ......\x0"
 
-	// temperary gdt
 GDT_START:	
 	DESC_ENTRY 0,	0, 		0
 DESC_CODE:	
@@ -23,11 +22,15 @@ DESC_DATA:
 DESC_STACK:	
 	DESC_ENTRY 0, 	0xffff,		DPL_0 + F_DC32_4G + F_DATA_W
 DESC_VIDOE:	
-	DESC_ENTRY 0xb8000,  (0xc0000-0xb8000), DPL_0 + F_DC32_4G + F_DATA_W
+	DESC_ENTRY 0xb8000,  (0xc0000-0xb8000), DPL_3 + F_DC32_4G + F_DATA_W
 DESC_CUR_TSS:	
 	DESC_ENTRY 0,  	0xffff, 	DPL_0 + F_DC32_4G + F_DATA_W
 DESC_LDT:	
 	DESC_ENTRY 0, 	0xffff,		DPL_0 + F_DC32_4G + F_DATA_W
+DESC_USER_CODE:
+	DESC_ENTRY 0, 	0xffff, 	DPL_3 + F_DC32_4G + F_CODE_R
+DESC_USER_DATA:	
+	DESC_ENTRY 0, 	0xffff,		DPL_3 + F_DC32_4G + F_DATA_W
 	
 gdt_struct:
 	.2byte GDT_SIZE - 1
@@ -36,23 +39,14 @@ gdt_struct:
 	// of c routines
 	.4byte GDT_ADDRESS
 	
-	
 _kernel_start:
 	display_str $kern_welcome, 2, 0
 	// prepare descriptors
 /*	
 	xorl	%eax, %eax
-	movw 	$_stack, %ax
-	movw 	%ax, (DESC_STACK+2)
-	shr	$16, %eax
-	movb	%al, (DESC_STACK+4)
-	movb	%ah, (DESC_STACK+7)
-*/
-	xorl	%eax, %eax
 	movw 	$_code32_size, %ax
 	movw 	%ax, DESC_CODE
 
-/*	
 	xorl	%eax, %eax
 	movw 	$_code32, %ax
 	movw 	%ax, (DESC_CODE+2)
@@ -61,18 +55,18 @@ _kernel_start:
 	movb	%ah, (DESC_CODE+7)
 */
 	
-/*	
+	// prepare testing user code seg
 	xorl	%eax, %eax
-	movw 	_data_size, %ax
-	movw 	%ax, DESC_DATA
-
+	movw 	$_user_code_size, %ax
+	movw 	%ax, DESC_USER_CODE
+	
 	xorl	%eax, %eax
-	movw 	$_data, %ax
-	movw 	%ax, (DESC_DATA+2)
+	movw 	$_user_code, %ax
+	movw 	%ax, (DESC_USER_CODE+2)
 	shr	$16, %eax
-	movb	%al, (DESC_DATA+4)
-	movb	%ah, (DESC_DATA+7)
-*/
+	movb	%al, (DESC_USER_CODE+4)
+	movb	%ah, (DESC_USER_CODE+7)
+	
 	// move GDT to some place easy to find by C routines
 	xor	%ax, %ax
 	mov	%ax, %ds
@@ -122,7 +116,6 @@ _code32:
 	movl	%eax, %fs
 	movl	%eax, %gs
 
-//	movl	$SEL_STACK, %eax
 	movl	%eax, %ss
 	movl	$0x4800, %esp
 	
@@ -143,11 +136,28 @@ _code32:
 	jmp 	1b
 1:	nop
 
+	// test jmp to ring 3: ss, esp, params(#0), cs, eip
+/*	
+	pushl $SEL_USER_DATA
+	pushl $0x80000
+	pushl $SEL_USER_CODE
+	pushl $0
+	retf
+*/
+
 	call init
 1:	jmp 1b	
 	
-	.set _code32_size , . - _code32
 
-	
+_user_code:
+	xorl 	%edi, %edi
+	movl 	$(1*80 + 0)<<1, %edi
+	movb 	$0x05, %al
+	movb	$'U', %es:(%edi)
+	inc	%edi
+	movb	%al, %es:(%edi)
+	nop
+1:	jmp 1b
 
+	.set _user_code_size, . - _user_code
 	

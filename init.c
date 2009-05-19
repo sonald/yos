@@ -75,7 +75,8 @@ u64* gdt = (u64*)GDT_ADDRESS;
 void install_isr_descripter(int vector, u64 offset)
 {
 	if ( vector >= 0 && vector < IDT_ENTRIES ) {
-		u64 idt_entry = ((F_386I)<<32) | (((u64)SEL_CODE)<<16);
+//		u64 idt_entry = ((ATTR_386I)<<32) | (((u64)SEL_CODE)<<16);
+		u64 idt_entry = (((u64)ATTR_386I)<<40) | (((u64)SEL_CODE)<<16);		
 		idt_entry |= (offset & 0xffff);
 		idt_entry |= (offset << 32 ) & 0xffff000000000000ULL;
 		idt[vector] = idt_entry;
@@ -131,8 +132,7 @@ void cpu_info(PRINT_LEVEL lvl, uint32 dummy, uint32 ret_ip, uint32 ss, uint32 fs
 			:: "a"(PL_ERROR)					\
 			);									\
 		halt();									\
-	}	
-		
+	}
 
 /**
  * exception handlers called from corresponding ISR
@@ -288,33 +288,68 @@ void init_pic()
 	outb(0xff, 0xa1);
 }
 
+void setup_gdt_entry(int pos, uint32 base, uint32 limit, uint32 attrs)
+{
+	u64 entry = (limit & 0xffffULL);
+	u64 _attrs = (u64)attrs;
+	u64 _base = (u64)base;
+	u64 _limit = (u64)limit;
+	
+	entry |= ((_base << 16) & 0xff0000ffffff0000ULL);
+	entry |= ((_attrs << 40) & 0x00ffff0000000000ULL);
+	entry |= ((_limit & 0x000f0000ULL) << 32);
+
+/*	
+	.word \limit & 0xffff
+	.word \base & 0xffff
+	.byte (\base >> 16) & 0x00ff
+	.word (\attrs & 0xf0ff) | ((\limit >> 8) & 0x0f00)
+	.byte (\base >> 24) & 0xff
+*/	
+}
+
 /**
  * now we switch to use c, and this is the first routine
  * seting up all ISRs and other initialization
  */
 
+//char user_stack[2048] = "";
+
 void init()
 {
+	cli();
+	
 	setup_idt();
 	init_pic();
 
 	init_8254_timer();
 	init_kbd();
-//	install_isr_descripter( IRQ_TIMER, (uint32)timer );
-//	install_isr_descripter( IRQ_PS2_KBD, (uint32)keyboard_handler );
 	
 	sti();
 
 	set_cursor(0, 0);
+	
 	while(1);
 	
+	// goto user level
+	// prepare stack for iret:
+	// ss
+	// esp
+	// params
+	// cs
+	// eip
+//	__asm__ __volatile__ (
+//		);
+	
+	
+#if 0
 	int i = 0;
 	int x = 0, y = 0;
 	while(1) {
 		get_cursor( &x, &y );
 		set_cursor( 0, 10 );
 		uint32 tick = jiffies;
-		if ( (tick % 18) == 0 )
+		if ( (tick % 100) == 0 )
 			early_kprint( PL_WARN, "%d", i );
 		i++;
 		
@@ -322,4 +357,6 @@ void init()
 	}
 	
 	early_kprint( PL_INFO, "after while\n" );
+#endif
+	
 }

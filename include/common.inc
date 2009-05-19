@@ -7,7 +7,7 @@
 	.set IDT_ADDRESS, 0x90000	/* base address of IDT */	
 	.set IDT_SIZE, (256<<3)		/* 256 entries */
 	.set GDT_ADDRESS, (IDT_ADDRESS+IDT_SIZE) /* base address of GDT */
-	.set GDT_ENTRIES, 7
+	.set GDT_ENTRIES, 9
 	.set GDT_SIZE, (GDT_ENTRIES<<3)
 
 	// descriptor attributes
@@ -23,6 +23,7 @@
 	.set F_DC,	0x0010
 	.set F_SYS, 	0x0000
 
+	//TYPE  Gate/Code/Data
 	// Accessed, Write/Read, Confirming, EXE
 	.set F_CODE, 	0x0008	/* 0b00001000 */
 	.set F_CODE_A, 	0x0009 	/* 0b00001001 */
@@ -42,6 +43,16 @@
 	.set F_DATA_DW,	0x0006  /* 0b00000110 */
 	.set F_DATA_DWA,0x0007	/* 0b00000111 */
 
+	//Gate Type
+	.set F_LDT,	0x0002
+	.set F_TASK,	0x0005
+	.set F_386TSS,	0x0009	/* available tss */
+	.set F_386TSS_BUSY,	0x000b	/* busy tss */
+	.set F_836C,	0x000c	/* call gate */
+	.set F_386I,  	0x000e
+	.set F_386TRAP,	0x000f
+
+
 	//Granularity, D/B 32bit
 	.set F_G, 	0x8000
 	.set F_DB32,	0x4000
@@ -56,10 +67,14 @@
 	// convience combination flags
 	.set F_DC32_4G, 	F_DC + F_G + F_DB32 + F_P
 
-	.set SEL_CODE,  0x08 + RPL_0
-	.set SEL_DATA,  0x10 + RPL_0
-	.set SEL_STACK, 0x18 + RPL_0
-	.set SEL_VIDEO, 0x20 + RPL_0
+	.set SEL_CODE,  	0x08 + RPL_0
+	.set SEL_DATA,  	0x10 + RPL_0
+	.set SEL_STACK, 	0x18 + RPL_0
+	.set SEL_VIDEO, 	0x20 + RPL_0
+	.set SEL_CUR_TSS,	0x28 + RPL_3
+	.set SEL_CUR_LDT,	0x30 + RPL_3
+	.set SEL_USER_CODE,     0x38 + RPL_3
+	.set SEL_USER_DATA,     0x40 + RPL_3
 	
 	.macro DESC_ENTRY base, limit, attrs
 	.word \limit & 0xffff
