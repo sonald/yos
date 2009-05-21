@@ -3,6 +3,7 @@
 #include <isr.h>
 #include <timer.h>
 #include <keyboard.h>
+#include <task.h>
 
 //////////////////////////////  testing routines  //////////////////////////////
 
@@ -133,6 +134,11 @@ void cpu_info(PRINT_LEVEL lvl, uint32 dummy, uint32 ret_ip, uint32 ss, uint32 fs
 			);									\
 		halt();									\
 	}
+
+/* #define TMP_COMMON_HANDLER 	{					\ */
+/* 		halt();									\ */
+/* 	} */
+
 
 /**
  * exception handlers called from corresponding ISR
@@ -290,15 +296,19 @@ void init_pic()
 
 void setup_gdt_entry(int pos, uint32 base, uint32 limit, uint32 attrs)
 {
+	
 	u64 entry = (limit & 0xffffULL);
 	u64 _attrs = (u64)attrs;
 	u64 _base = (u64)base;
 	u64 _limit = (u64)limit;
+	early_kprint( PL_DEBUG, "pos %d, base %x, limit %x, attrs %x \n",
+				  pos, base, limit, _attrs );
 	
 	entry |= ((_base << 16) & 0xff0000ffffff0000ULL);
 	entry |= ((_attrs << 40) & 0x00ffff0000000000ULL);
 	entry |= ((_limit & 0x000f0000ULL) << 32);
-
+	gdt[pos] = entry;
+	
 /*	
 	.word \limit & 0xffff
 	.word \base & 0xffff
@@ -308,12 +318,26 @@ void setup_gdt_entry(int pos, uint32 base, uint32 limit, uint32 attrs)
 */	
 }
 
+void user_test()
+{
+	__asm__ __volatile__ (
+		"mov $0x43, %%eax   \n\t"
+		"mov %%eax, %%ds \n\t"
+		"mov %%eax, %%fs \n\t"
+		"mov %%eax, %%gs \n\t"
+		"mov $0x20, %%eax \n\t"
+		"mov %%eax, %%es \n\t"
+		:::"eax"
+		);
+	
+	early_kprint( PL_WARN, "Hello From User Space\n" );
+	while(1);
+}
+
 /**
  * now we switch to use c, and this is the first routine
  * seting up all ISRs and other initialization
  */
-
-//char user_stack[2048] = "";
 
 void init()
 {
@@ -325,22 +349,54 @@ void init()
 	init_8254_timer();
 	init_kbd();
 	
-	sti();
-
 	set_cursor(0, 0);
+	setup_gdt_entry(SEL_USER_CODE>>3, 0UL, 0xffffUL, (F_USER32_CODE));
+	setup_gdt_entry(SEL_USER_DATA>>3, 0UL, 0xffffUL, (F_USER32_DATA));
+
+	struct tss_struct tss0 = {
+		.link = 0,
+		.esp0 = (uint32)0x80000,
+		.ss0 = SEL_USER_DATA,
+		.cr3 = 0,
+		.eip = (uint32)user_test,
+		.eflags = 0x3202,
+		.es = SEL_VIDEO,
+		.cs = SEL_USER_DATA,
+		.ss = SEL_USER_DATA,
+		.ds = SEL_USER_DATA,
+		.fs = SEL_USER_DATA,
+		.gs = SEL_USER_DATA,
+		.ldt_selector = SEL_CUR_LDT,
+		.t = 0,
+		.io_map = 0
+	};
+
+	//for TSS & LDT
+	setup_gdt_entry((SEL_CUR_TSS>>3), 0UL, 0xffffUL, (F_USER32_TSS));
+	setup_gdt_entry((SEL_CUR_LDT>>3), 0UL, 0xffffUL, (F_USER32_LDT));
 	
+	__asm__ (
+		"ltrw %%ax \n\t"
+		"lldt %%bx \n\t"
+		::"a"(SEL_CUR_TSS), "b"(SEL_CUR_LDT)
+		);
+
+	sti();
+	
+	__asm__ __volatile__ (
+		"pushl %0        \n\t"
+		"pushl $0x80000  \n\t"
+		"pushl %1        \n\t"
+		"pushl %2        \n\t"
+		"retf            \n\t"
+		"mov %0, %%eax   \n\t"
+		"mov %%eax, %%ds \n\t"
+		"mov %%eax, %%fs \n\t"
+		"mov %%eax, %%gs \n\t"
+		::"i"(SEL_USER_DATA), "i"(SEL_USER_CODE), "i"(user_test)
+		);
+
 	while(1);
-	
-	// goto user level
-	// prepare stack for iret:
-	// ss
-	// esp
-	// params
-	// cs
-	// eip
-//	__asm__ __volatile__ (
-//		);
-	
 	
 #if 0
 	int i = 0;

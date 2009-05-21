@@ -65,7 +65,9 @@
 	.set SEL_LOCAL,	0x04
 
 	// convience combination flags
-	.set F_DC32_4G, 	F_DC + F_G + F_DB32 + F_P
+	.set F_DC32_4G, 	(F_DC + F_G + F_DB32 + F_P)
+	.set F_USER32_DATA,     (F_G + F_P + F_DC + DPL_3 + F_DB32 + F_DATA_WA)
+	.set F_USER32_CODE,     (F_G + F_P + F_DC + DPL_3 + F_DB32 + F_CODE_CRA)
 
 	.set SEL_CODE,  	0x08 + RPL_0
 	.set SEL_DATA,  	0x10 + RPL_0

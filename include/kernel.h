@@ -24,9 +24,9 @@
 #define GDT_SIZE           (GDT_ENTRIES<<3)
 
 #define DPL_0       0x0000
-#define DPL_1    	0x2000 
-#define DPL_2       0x4000
-#define DPL_3       0x6000
+#define DPL_1    	0x0020 
+#define DPL_2       0x0040
+#define DPL_3       0x0060
 
 // Present
 #define F_P 	0x0080
@@ -64,18 +64,24 @@
 #define ATTR_386I   (F_P + F_SYS + F_386I)
 //#define ATTR_386I   0x8e00ULL
 
+//convient defs
+#define F_USER32_DATA     (F_G + F_P + F_DC + DPL_3 + F_DB32 + F_DATA_WA)
+#define F_USER32_CODE     (F_G + F_P + F_DC + DPL_3 + F_DB32 + F_CODE_CRA)
+#define F_USER32_LDT      (F_G + F_P + DPL_0 + F_SYS + F_LDT)
+#define F_USER32_TSS      (F_G + F_P + DPL_0 + F_SYS + F_386TSS)
+
 #define RPL_0              0
 #define RPL_1              1
 #define RPL_2              2
 #define RPL_3              3
 
-#define SEL_CODE           0x08 + RPL_0
-#define SEL_DATA           0x10 + RPL_0
-#define SEL_VIDEO          0x20 + RPL_0
-#define SEL_CUR_TSS	       0x28 + RPL_3
-#define SEL_CUR_LDT	       0x30 + RPL_3
-#define SEL_USER_CODE      0x38 + RPL_3
-#define SEL_USER_DATA      0x40 + RPL_3
+#define SEL_CODE           (0x08 + RPL_0)
+#define SEL_DATA           (0x10 + RPL_0)
+#define SEL_VIDEO          (0x20 + RPL_0)
+#define SEL_CUR_TSS	       (0x28 + RPL_3)
+#define SEL_CUR_LDT	       (0x30 + RPL_3)
+#define SEL_USER_CODE      (0x38 + RPL_3)
+#define SEL_USER_DATA      (0x40 + RPL_3)
 
 typedef unsigned long long u64;
 

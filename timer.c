@@ -22,6 +22,7 @@ uint32 jiffies = 0;
 
 void do_timer()
 {
+	
 	jiffies++;
 
 	// send EOI to indicate cpu that interrupt process
@@ -31,5 +32,4 @@ void do_timer()
 		"out %%al, $0x20 \n\t"
 		::: "eax"
 		);
-	
 }

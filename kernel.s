@@ -28,9 +28,9 @@ DESC_CUR_TSS:
 DESC_LDT:	
 	DESC_ENTRY 0, 	0xffff,		DPL_0 + F_DC32_4G + F_DATA_W
 DESC_USER_CODE:
-	DESC_ENTRY 0, 	0xffff, 	DPL_3 + F_DC32_4G + F_CODE_R
+	DESC_ENTRY 0, 	0xffff, 	F_USER32_CODE
 DESC_USER_DATA:	
-	DESC_ENTRY 0, 	0xffff,		DPL_3 + F_DC32_4G + F_DATA_W
+	DESC_ENTRY 0, 	0xffff,		F_USER32_DATA
 	
 gdt_struct:
 	.2byte GDT_SIZE - 1
@@ -54,7 +54,7 @@ _kernel_start:
 	movb	%al, (DESC_CODE+4)
 	movb	%ah, (DESC_CODE+7)
 */
-	
+.if 1	
 	// prepare testing user code seg
 	xorl	%eax, %eax
 	movw 	$_user_code_size, %ax
@@ -66,7 +66,7 @@ _kernel_start:
 	shr	$16, %eax
 	movb	%al, (DESC_USER_CODE+4)
 	movb	%ah, (DESC_USER_CODE+7)
-	
+.endif	
 	// move GDT to some place easy to find by C routines
 	xor	%ax, %ax
 	mov	%ax, %ds
@@ -137,13 +137,13 @@ _code32:
 1:	nop
 
 	// test jmp to ring 3: ss, esp, params(#0), cs, eip
-/*	
+.if 0
 	pushl $SEL_USER_DATA
 	pushl $0x80000
 	pushl $SEL_USER_CODE
 	pushl $0
 	retf
-*/
+.endif
 
 	call init
 1:	jmp 1b	
