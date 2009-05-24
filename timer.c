@@ -22,14 +22,20 @@ uint32 jiffies = 0;
 
 void do_timer()
 {
-	
 	jiffies++;
-
+	int x, y;
+	get_cursor(&x, &y);
+	set_cursor(74, 24);
+	early_kprint( PL_WARN, "%d", jiffies/HZ );
+	set_cursor(x, y);
+	
 	// send EOI to indicate cpu that interrupt process
 	// this is necessary because we programmed pic to manual mode
-	__asm__ __volatile__ (
-		"mov $0x20, %%al \n\t"
-		"out %%al, $0x20 \n\t"
-		::: "eax"
-		);
+	outb( 0x20, 0x20 );
+	
+	/* __asm__ __volatile__ ( */
+	/* 	"mov $0x20, %%al \n\t" */
+	/* 	"out %%al, $0x20 \n\t" */
+	/* 	::: "eax" */
+	/* 	); */
 }

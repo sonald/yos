@@ -63,15 +63,16 @@ typedef char* args_list;
 int early_kprint(PRINT_LEVEL lvl, const char* fmt, ...);
 
 // scroll up n lines
-void scroll_up(int n);
+extern void scroll_up(int n);
 
 // change cursor position, temperary implementation
-void set_cursor(int x, int y);
+extern void set_cursor(int x, int y);
+extern void get_cursor(int *x, int *y);
 
 /**
  * output a char to video buffer
  */
-void early_video_putc(char c, print_level_color_t color);
+extern void early_video_putc(char c, print_level_color_t color);
 
 extern char __early_buf[BUF_SIZE];
 char* early_itos(int i, int base);

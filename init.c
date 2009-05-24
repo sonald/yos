@@ -72,12 +72,15 @@ void test_iolib()
  */
 u64* idt = (u64*)IDT_ADDRESS;
 u64* gdt = (u64*)GDT_ADDRESS;
+// will fill later in init
+u64 default_ldt[2] = {
+	0, 0
+};
 
 void install_isr_descripter(int vector, u64 offset)
 {
 	if ( vector >= 0 && vector < IDT_ENTRIES ) {
-//		u64 idt_entry = ((ATTR_386I)<<32) | (((u64)SEL_CODE)<<16);
-		u64 idt_entry = (((u64)ATTR_386I)<<40) | (((u64)SEL_CODE)<<16);		
+		u64 idt_entry = (((u64)ATTR_386I)<<40) | (((u64)SEL_CODE)<<16);				
 		idt_entry |= (offset & 0xffff);
 		idt_entry |= (offset << 32 ) & 0xffff000000000000ULL;
 		idt[vector] = idt_entry;
@@ -185,7 +188,8 @@ void do_no_coprocessor()
 
 void do_double_fault()
 {
-	TMP_COMMON_HANDLER
+	halt();
+//	TMP_COMMON_HANDLER
 }
 
 void do_coprocessor_overrun()
@@ -195,7 +199,8 @@ void do_coprocessor_overrun()
 
 void do_bad_tss()
 {
-	TMP_COMMON_HANDLER
+	halt();
+//	TMP_COMMON_HANDLER
 }
 
 void do_segment_not_present()
@@ -321,7 +326,7 @@ void setup_gdt_entry(int pos, uint32 base, uint32 limit, uint32 attrs)
 void user_test()
 {
 	__asm__ __volatile__ (
-		"mov $0x43, %%eax   \n\t"
+		"mov $0xf, %%eax   \n\t"
 		"mov %%eax, %%ds \n\t"
 		"mov %%eax, %%fs \n\t"
 		"mov %%eax, %%gs \n\t"
@@ -329,8 +334,18 @@ void user_test()
 		"mov %%eax, %%es \n\t"
 		:::"eax"
 		);
-	
-	early_kprint( PL_WARN, "Hello From User Space\n" );
+
+	char wheel[] = {'\\', '|', '/', '-'};
+	int i = 0;
+ 
+	for (;;) {
+		__asm__ ("movb  %%al,   0xb8000+160*24"::"a"(wheel[i]));
+		if (i == sizeof wheel)
+			i = 0;
+		else
+			++i;
+	}
+
 	while(1);
 }
 
@@ -338,6 +353,36 @@ void user_test()
  * now we switch to use c, and this is the first routine
  * seting up all ISRs and other initialization
  */
+
+struct tss_struct tss0 = {
+	.link = 0,
+	.esp0 = (uint32)0x8000,
+	.ss0 = SEL_DATA,
+	.esp1 = 0,
+	.ss1 = 0,
+	.esp2 = 0x6000,
+	.ss2 = SEL_USER_DATA,
+	.cr3 = 0,
+	.eip = 0,
+	.eflags = 0,
+	.eax = 0,
+	.ecx = 0,
+	.edx = 0,
+	.ebx = 0,
+	.esp = 0,
+	.ebp = 0,
+	.esi = 0,
+	.edi = 0,
+	.es = SEL_VIDEO,
+	.cs = SEL_USER_CODE,
+	.ss = SEL_USER_DATA,
+	.ds = SEL_USER_DATA,
+	.fs = SEL_USER_DATA,
+	.gs = SEL_USER_DATA,
+	.ldt_selector = SEL_CUR_LDT,
+	.t = 0,
+	.io_map = 0
+};
 
 void init()
 {
@@ -350,45 +395,32 @@ void init()
 	init_kbd();
 	
 	set_cursor(0, 0);
-	setup_gdt_entry(SEL_USER_CODE>>3, 0UL, 0xffffUL, (F_USER32_CODE));
-	setup_gdt_entry(SEL_USER_DATA>>3, 0UL, 0xffffUL, (F_USER32_DATA));
+	/* setup_gdt_entry(SEL_USER_CODE>>3, 0UL, 0xffffUL, (F_USER32_CODE)); */
+	/* setup_gdt_entry(SEL_USER_DATA>>3, 0UL, 0xffffUL, (F_USER32_DATA)); */
+	/* default_ldt[0] = gdt[SEL_USER_CODE>>3]; */
+	/* default_ldt[1] = gdt[SEL_USER_DATA>>3]; */
+	default_ldt[0] = 0x00c0fa0000008fffULL;
+	default_ldt[1] = 0x00c0f20000008fffULL;
 
-	struct tss_struct tss0 = {
-		.link = 0,
-		.esp0 = (uint32)0x80000,
-		.ss0 = SEL_USER_DATA,
-		.cr3 = 0,
-		.eip = (uint32)user_test,
-		.eflags = 0x3202,
-		.es = SEL_VIDEO,
-		.cs = SEL_USER_DATA,
-		.ss = SEL_USER_DATA,
-		.ds = SEL_USER_DATA,
-		.fs = SEL_USER_DATA,
-		.gs = SEL_USER_DATA,
-		.ldt_selector = SEL_CUR_LDT,
-		.t = 0,
-		.io_map = 0
-	};
-
-	//for TSS & LDT
-	setup_gdt_entry((SEL_CUR_TSS>>3), 0UL, 0xffffUL, (F_USER32_TSS));
-	setup_gdt_entry((SEL_CUR_LDT>>3), 0UL, 0xffffUL, (F_USER32_LDT));
 	
-	__asm__ (
-		"ltrw %%ax \n\t"
-		"lldt %%bx \n\t"
-		::"a"(SEL_CUR_TSS), "b"(SEL_CUR_LDT)
-		);
+	//for TSS & LDT
+	setup_gdt_entry((SEL_CUR_TSS>>3), (uint32)&tss0, 0x67UL, (F_USER32_TSS));
+	setup_gdt_entry((SEL_CUR_LDT>>3), (uint32)default_ldt, 0xfUL, (F_USER32_LDT));
+	
+	__asm__ ( "ltrw %%ax \n\t" ::"a"(SEL_CUR_TSS) );
+	__asm__ ( "lldt %%ax \n\t" ::"a"(SEL_CUR_LDT) );
 
 	sti();
-	
+
 	__asm__ __volatile__ (
+		"mov %%esp, %%eax\n\t"
 		"pushl %0        \n\t"
-		"pushl $0x80000  \n\t"
+		"pushl %%eax     \n\t"
+		"pushfl          \n\t"
 		"pushl %1        \n\t"
 		"pushl %2        \n\t"
-		"retf            \n\t"
+//		"retf            \n\t"
+		"iret            \n\t"		
 		"mov %0, %%eax   \n\t"
 		"mov %%eax, %%ds \n\t"
 		"mov %%eax, %%fs \n\t"
@@ -397,6 +429,7 @@ void init()
 		);
 
 	while(1);
+
 	
 #if 0
 	int i = 0;

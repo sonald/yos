@@ -66,7 +66,7 @@
 
 //convient defs
 #define F_USER32_DATA     (F_G + F_P + F_DC + DPL_3 + F_DB32 + F_DATA_WA)
-#define F_USER32_CODE     (F_G + F_P + F_DC + DPL_3 + F_DB32 + F_CODE_CRA)
+#define F_USER32_CODE     (F_G + F_P + F_DC + DPL_3 + F_DB32 + F_CODE_RA)
 #define F_USER32_LDT      (F_G + F_P + DPL_0 + F_SYS + F_LDT)
 #define F_USER32_TSS      (F_G + F_P + DPL_0 + F_SYS + F_386TSS)
 
@@ -75,13 +75,17 @@
 #define RPL_2              2
 #define RPL_3              3
 
+#define SEL_TI             4
+
 #define SEL_CODE           (0x08 + RPL_0)
 #define SEL_DATA           (0x10 + RPL_0)
 #define SEL_VIDEO          (0x20 + RPL_0)
-#define SEL_CUR_TSS	       (0x28 + RPL_3)
-#define SEL_CUR_LDT	       (0x30 + RPL_3)
-#define SEL_USER_CODE      (0x38 + RPL_3)
-#define SEL_USER_DATA      (0x40 + RPL_3)
+#define SEL_CUR_TSS	       (0x28 + RPL_0)
+#define SEL_CUR_LDT	       (0x30 + RPL_0)
+//#define SEL_USER_CODE      (0x38 + RPL_3)
+//#define SEL_USER_DATA      (0x40 + RPL_3)
+#define SEL_USER_CODE      (0x00 + RPL_3 + SEL_TI)
+#define SEL_USER_DATA      (0x08 + RPL_3 + SEL_TI)
 
 typedef unsigned long long u64;
 

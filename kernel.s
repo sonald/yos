@@ -16,7 +16,7 @@ kern_welcome:
 GDT_START:	
 	DESC_ENTRY 0,	0, 		0
 DESC_CODE:	
-	DESC_ENTRY 0, 	0xffff, 	DPL_0 + F_DC32_4G + F_CODE_CR
+	DESC_ENTRY 0, 	0xffff, 	DPL_0 + F_DC32_4G + F_CODE_R
 DESC_DATA:	
 	DESC_ENTRY 0, 	0xffff,		DPL_0 + F_DC32_4G + F_DATA_W
 DESC_STACK:	
@@ -54,7 +54,7 @@ _kernel_start:
 	movb	%al, (DESC_CODE+4)
 	movb	%ah, (DESC_CODE+7)
 */
-.if 1	
+.if 0
 	// prepare testing user code seg
 	xorl	%eax, %eax
 	movw 	$_user_code_size, %ax
@@ -112,7 +112,6 @@ _code32:
 	 */
 	movl	$SEL_DATA, %eax
 	movl	%eax, %ds
-	movl	%eax, %es
 	movl	%eax, %fs
 	movl	%eax, %gs
 
@@ -147,7 +146,6 @@ _code32:
 
 	call init
 1:	jmp 1b	
-	
 
 _user_code:
 	xorl 	%edi, %edi

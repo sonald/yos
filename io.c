@@ -266,7 +266,28 @@ void get_cursor(int *x, int *y)
 {
 	*x = screen_x;
 	*y = screen_y;
+
 }
+
+#if 1
+
+void set_cursor(int x, int y)
+{
+	if ( INSET(x, 0, VIDEO_COLUMNS-1) && INSET(y, 0, VIDEO_ROWS-1) ) {
+		screen_x = x;
+		screen_y = y;
+		unsigned short position=(y*80) + x;
+
+		// cursor LOW port to vga INDEX register
+		outb(0x0F, 0x3d4);
+		outb((unsigned char)(position&0xFF), 0x3d5);
+		// cursor HIGH port to vga INDEX register
+		outb(0x0E, 0x3d4);
+		outb((unsigned char )((position>>8)&0xFF), 0x3d5);
+	}
+}
+
+#else
 
 void set_cursor(int x, int y)
 {
@@ -275,7 +296,7 @@ void set_cursor(int x, int y)
 		screen_y = y;
 	}
 }
-
+#endif
 
 void scroll_up(int n)
 {
