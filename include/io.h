@@ -69,6 +69,9 @@ extern void scroll_up(int n);
 extern void set_cursor(int x, int y);
 extern void get_cursor(int *x, int *y);
 
+extern void forward_cursor();
+extern void backward_cursor();
+
 /**
  * output a char to video buffer
  */

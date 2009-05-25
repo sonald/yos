@@ -5,6 +5,7 @@
 #include <isr.h>
 #include <timer.h>
 #include <io.h>
+#include <task.h>
 
 void init_8254_timer()
 {
@@ -22,20 +23,31 @@ uint32 jiffies = 0;
 
 void do_timer()
 {
+	cli();
 	jiffies++;
 	int x, y;
 	get_cursor(&x, &y);
 	set_cursor(74, 24);
 	early_kprint( PL_WARN, "%d", jiffies/HZ );
 	set_cursor(x, y);
-	
+
 	// send EOI to indicate cpu that interrupt process
 	// this is necessary because we programmed pic to manual mode
 	outb( 0x20, 0x20 );
+
+	// schedule 5 times a second
+	byte schedule = (jiffies % (HZ/5) == 0);
+	if ( schedule ) {
+		scheduler();
+	}
+	sti();
 	
-	/* __asm__ __volatile__ ( */
-	/* 	"mov $0x20, %%al \n\t" */
-	/* 	"out %%al, $0x20 \n\t" */
-	/* 	::: "eax" */
-	/* 	); */
+}
+
+void delay(int msecs)
+{
+	uint32 ticks = (msecs * HZ) / 1000;
+	uint32 start = jiffies;
+	while ( jiffies - start < ticks )
+		;
 }

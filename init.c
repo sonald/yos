@@ -4,6 +4,7 @@
 #include <timer.h>
 #include <keyboard.h>
 #include <task.h>
+#include <user.h>
 
 //////////////////////////////  testing routines  //////////////////////////////
 
@@ -137,11 +138,6 @@ void cpu_info(PRINT_LEVEL lvl, uint32 dummy, uint32 ret_ip, uint32 ss, uint32 fs
 			);									\
 		halt();									\
 	}
-
-/* #define TMP_COMMON_HANDLER 	{					\ */
-/* 		halt();									\ */
-/* 	} */
-
 
 /**
  * exception handlers called from corresponding ISR
@@ -306,8 +302,8 @@ void setup_gdt_entry(int pos, uint32 base, uint32 limit, uint32 attrs)
 	u64 _attrs = (u64)attrs;
 	u64 _base = (u64)base;
 	u64 _limit = (u64)limit;
-	early_kprint( PL_DEBUG, "pos %d, base %x, limit %x, attrs %x \n",
-				  pos, base, limit, _attrs );
+	/* early_kprint( PL_DEBUG, "pos %d, base %x, limit %x, attrs %x \n", */
+	/* 			  pos, base, limit, _attrs ); */
 	
 	entry |= ((_base << 16) & 0xff0000ffffff0000ULL);
 	entry |= ((_attrs << 40) & 0x00ffff0000000000ULL);
@@ -354,36 +350,6 @@ void user_test()
  * seting up all ISRs and other initialization
  */
 
-struct tss_struct tss0 = {
-	.link = 0,
-	.esp0 = (uint32)0x8000,
-	.ss0 = SEL_DATA,
-	.esp1 = 0,
-	.ss1 = 0,
-	.esp2 = 0x6000,
-	.ss2 = SEL_USER_DATA,
-	.cr3 = 0,
-	.eip = 0,
-	.eflags = 0,
-	.eax = 0,
-	.ecx = 0,
-	.edx = 0,
-	.ebx = 0,
-	.esp = 0,
-	.ebp = 0,
-	.esi = 0,
-	.edi = 0,
-	.es = SEL_VIDEO,
-	.cs = SEL_USER_CODE,
-	.ss = SEL_USER_DATA,
-	.ds = SEL_USER_DATA,
-	.fs = SEL_USER_DATA,
-	.gs = SEL_USER_DATA,
-	.ldt_selector = SEL_CUR_LDT,
-	.t = 0,
-	.io_map = 0
-};
-
 void init()
 {
 	cli();
@@ -394,23 +360,28 @@ void init()
 	init_8254_timer();
 	init_kbd();
 	
-	set_cursor(0, 0);
 	/* setup_gdt_entry(SEL_USER_CODE>>3, 0UL, 0xffffUL, (F_USER32_CODE)); */
 	/* setup_gdt_entry(SEL_USER_DATA>>3, 0UL, 0xffffUL, (F_USER32_DATA)); */
 	/* default_ldt[0] = gdt[SEL_USER_CODE>>3]; */
 	/* default_ldt[1] = gdt[SEL_USER_DATA>>3]; */
-	default_ldt[0] = 0x00c0fa0000008fffULL;
-	default_ldt[1] = 0x00c0f20000008fffULL;
-
+	/* default_ldt[0] = 0x00c0fa0000008fffULL; */
+	/* default_ldt[1] = 0x00c0f20000008fffULL; */
+ 
 	
-	//for TSS & LDT
-	setup_gdt_entry((SEL_CUR_TSS>>3), (uint32)&tss0, 0x67UL, (F_USER32_TSS));
-	setup_gdt_entry((SEL_CUR_LDT>>3), (uint32)default_ldt, 0xfUL, (F_USER32_LDT));
+	//for init task's TSS & LDT
+	setup_gdt_entry((SEL_CUR_TSS>>3), (uint32)&task_init.tss, 0x67UL, (F_USER32_TSS));
+	setup_gdt_entry((SEL_CUR_LDT>>3), (uint32)&task_init.ldt, 0xfUL, (F_USER32_LDT));
 	
 	__asm__ ( "ltrw %%ax \n\t" ::"a"(SEL_CUR_TSS) );
 	__asm__ ( "lldt %%ax \n\t" ::"a"(SEL_CUR_LDT) );
 
+	current = &task_init;
+
+	new_task( &task1, do_task1, 0x7000, 0x7800 );
+	new_task( &task2, do_task2, 0x8000, 0x8800 );	
+	
 	sti();
+	set_cursor(0, 0);
 
 	__asm__ __volatile__ (
 		"mov %%esp, %%eax\n\t"
@@ -419,18 +390,11 @@ void init()
 		"pushfl          \n\t"
 		"pushl %1        \n\t"
 		"pushl %2        \n\t"
-//		"retf            \n\t"
 		"iret            \n\t"		
-		"mov %0, %%eax   \n\t"
-		"mov %%eax, %%ds \n\t"
-		"mov %%eax, %%fs \n\t"
-		"mov %%eax, %%gs \n\t"
-		::"i"(SEL_USER_DATA), "i"(SEL_USER_CODE), "i"(user_test)
+//		::"i"(SEL_USER_DATA), "i"(SEL_USER_CODE), "i"(user_test)
+		::"i"(SEL_USER_DATA), "i"(SEL_USER_CODE), "i"(do_init_task)
 		);
 
-	while(1);
-
-	
 #if 0
 	int i = 0;
 	int x = 0, y = 0;

@@ -9,6 +9,7 @@ struct kbd_state_struct {
 	byte ctrl_down;
 	byte alt_down;
 	byte left;
+	byte capslock;
 };
 	
 extern void init_kbd();

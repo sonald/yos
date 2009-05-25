@@ -34,4 +34,6 @@ extern void init_8254_timer();
 // timer isr
 extern void do_timer();
 
+extern void delay(int msecs);
+
 #endif

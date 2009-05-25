@@ -35,7 +35,8 @@ static struct kbd_state_struct kbd_state = {
 	.shift_down = 0,
 	.ctrl_down = 0,
 	.alt_down = 0,
-	.left = 1
+	.left = 1,
+	.capslock = 0
 };
 
 typedef void (*scancode_handler)(struct kbd_state_struct kbd, byte code);
@@ -69,8 +70,9 @@ void do_process_printable(struct kbd_state_struct kbd, byte code)
 	}
 
 //	early_kprint( PL_DEBUG, "code: %d\n", code );
-	
-	if ( kbd.shift_down ) {
+	byte shift = (kbd.shift_down && !kbd.capslock) ||
+		(!kbd.shift_down && kbd.capslock);
+	if ( shift ) {
 		c = char_map[code][1];
 		if ( c )
 			early_video_putc( c, clr );
@@ -83,12 +85,37 @@ void do_process_printable(struct kbd_state_struct kbd, byte code)
 
 void do_process_unprintable(struct kbd_state_struct kbd, byte code)
 {
-	early_kprint( PL_DEBUG, "do_process_unprintable not implemented\n" );	
+	/*
+47 (Keypad-7/Home), 48 (Keypad-8/Up), 49 (Keypad-9/PgUp)
+4a (Keypad--) 4b (Keypad-4/Left), 4c (Keypad-5), 4d (Keypad-6/Right), 4e (Keypad-+)
+4f (Keypad-1/End), 50 (Keypad-2/Down), 51 (Keypad-3/PgDn)
+52 (Keypad-0/Ins), 53 (Keypad-./Del)
+	*/
+	if ( code & 0x80 )
+		// key release, ignore now
+		return;
+
+//	early_kprint( PL_DEBUG, "%x\n", code );
+	
+	switch( code ) {
+	case 0x4d: //>
+		forward_cursor(); break;
+		
+	case 0x4b: //<
+		backward_cursor(); break;
+		
+	case 0x50: //v
+	case 0x48: //^
+	default:
+		break;
+	}
+	
 }
 
 void do_process_function(struct kbd_state_struct kbd, byte code)
 {
-	early_kprint( PL_DEBUG, "do_process_function not implemented\n" );
+	
+//	early_kprint( PL_DEBUG, "do_process_function not implemented\n" );
 }
 
 void do_keyboard()
@@ -124,10 +151,10 @@ make codes(break codes: +0x80 ) :
 	/*0x48*/    unp, unp, unp, unp, unp, unp, unp, unp,
 	/*0x50*/    unp, unp, unp, unp, unp, unp, unp, fun,
 	/*0x58*/    fun, unp, unp, unp, unp, unp, unp, unp,
-	/*0x60*/    unp, unp, unp, unp, unp, unp, unp, fun,
-	/*0x68*/    unp, unp, unp, unp, unp, unp, unp, fun,
-	/*0x70*/    unp, unp, unp, unp, unp, unp, unp, fun,
-	/*0x78*/    unp, unp, unp, unp, unp, unp, unp, fun
+	/*0x60*/    unp, unp, unp, unp, unp, unp, unp, unp,
+	/*0x68*/    unp, unp, unp, unp, unp, unp, unp, unp,
+	/*0x70*/    unp, unp, unp, unp, unp, unp, unp, unp,
+	/*0x78*/    unp, unp, unp, unp, unp, unp, unp, unp
 	};
 
 	
@@ -192,6 +219,10 @@ make codes(break codes: +0x80 ) :
 
 		case 0x38+0x80:
 			kbd_state.alt_down = 0;
+			break;
+
+		case 0x3a: //Caps Lock
+			kbd_state.capslock = !kbd_state.capslock;
 			break;
 			
 		default:

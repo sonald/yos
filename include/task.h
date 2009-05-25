@@ -29,10 +29,7 @@ struct tss_struct {
 
 struct task_struct {
 	struct tss_struct tss;
-	unsigned long long tss_descriptor;
-
-	unsigned long long ldt[2];
-	unsigned long long ldt_descriptor;
+	u64 ldt[2];
 
 	int state;
 	int priority;
@@ -44,5 +41,22 @@ struct task_struct {
 #define TASK_RUNNING       1
 #define TASK_DEAD          2
 
+
+#define DEFAULT_PRIO       10
+
+extern struct task_struct *current;
+extern struct task_struct task_init;
+extern void do_init_task();
+
+//TODO: I don't have a memory malloc, so don't use this right now
+//extern struct task_struct* new_task( void (*entry)() );
+
+extern void new_task(struct task_struct *task, void (*entry)(),
+					 uint32 esp0, uint32 esp3 );
+
+extern struct task_struct task1;
+extern struct task_struct task2;
+
+extern void scheduler();
 
 #endif

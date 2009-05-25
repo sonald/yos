@@ -264,39 +264,32 @@ int early_kprint(PRINT_LEVEL lvl, const char* fmt, ...)
 
 void get_cursor(int *x, int *y)
 {
-	*x = screen_x;
-	*y = screen_y;
-
+	if ( x != NULL && y != NULL ) {
+		*x = screen_x;
+		*y = screen_y;
+	}
 }
 
-#if 1
+static void update_cursor()
+{
+	unsigned short position=(screen_y*80) + screen_x;
+
+	// cursor LOW port to vga INDEX register
+	outb(0x0F, 0x3d4);
+	outb((unsigned char)(position&0xFF), 0x3d5);
+	// cursor HIGH port to vga INDEX register
+	outb(0x0E, 0x3d4);
+	outb((unsigned char )((position>>8)&0xFF), 0x3d5);
+}
 
 void set_cursor(int x, int y)
 {
 	if ( INSET(x, 0, VIDEO_COLUMNS-1) && INSET(y, 0, VIDEO_ROWS-1) ) {
 		screen_x = x;
 		screen_y = y;
-		unsigned short position=(y*80) + x;
-
-		// cursor LOW port to vga INDEX register
-		outb(0x0F, 0x3d4);
-		outb((unsigned char)(position&0xFF), 0x3d5);
-		// cursor HIGH port to vga INDEX register
-		outb(0x0E, 0x3d4);
-		outb((unsigned char )((position>>8)&0xFF), 0x3d5);
+		update_cursor();
 	}
 }
-
-#else
-
-void set_cursor(int x, int y)
-{
-	if ( INSET(x, 0, VIDEO_COLUMNS-1) && INSET(y, 0, VIDEO_ROWS-1) ) {
-		screen_x = x;
-		screen_y = y;
-	}
-}
-#endif
 
 void scroll_up(int n)
 {
@@ -346,18 +339,26 @@ int need_scroll()
 	return (screen_x == VIDEO_COLUMNS-1) && (screen_y == VIDEO_ROWS-1);
 }
 
+void backward_cursor()
+{
+}
+
 void forward_cursor() 
 {
 	if ( need_scroll() ) {
 		scroll_up(1);
+		screen_x = 0;
+		screen_y = VIDEO_COLUMNS - 1;
+		
 	} else {
-		if ( screen_x == VIDEO_COLUMNS ) {
+		if ( screen_x == VIDEO_COLUMNS-1 ) {
 			screen_x = 0;
 			screen_y++;
 		} else {
 			screen_x++;
 		}
 	}
+	update_cursor();
 }
 
 // this routine assumes that %es is the video segment selector
