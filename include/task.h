@@ -35,6 +35,9 @@ struct task_struct {
 	int priority;
 	
 	struct task_struct *next;
+
+	struct task_struct *sched_next;
+	struct task_struct *sched_prev;	
 };
 
 #define TASK_READY         0

@@ -309,40 +309,6 @@ void setup_gdt_entry(int pos, uint32 base, uint32 limit, uint32 attrs)
 	entry |= ((_attrs << 40) & 0x00ffff0000000000ULL);
 	entry |= ((_limit & 0x000f0000ULL) << 32);
 	gdt[pos] = entry;
-	
-/*	
-	.word \limit & 0xffff
-	.word \base & 0xffff
-	.byte (\base >> 16) & 0x00ff
-	.word (\attrs & 0xf0ff) | ((\limit >> 8) & 0x0f00)
-	.byte (\base >> 24) & 0xff
-*/	
-}
-
-void user_test()
-{
-	__asm__ __volatile__ (
-		"mov $0xf, %%eax   \n\t"
-		"mov %%eax, %%ds \n\t"
-		"mov %%eax, %%fs \n\t"
-		"mov %%eax, %%gs \n\t"
-		"mov $0x20, %%eax \n\t"
-		"mov %%eax, %%es \n\t"
-		:::"eax"
-		);
-
-	char wheel[] = {'\\', '|', '/', '-'};
-	int i = 0;
- 
-	for (;;) {
-		__asm__ ("movb  %%al,   0xb8000+160*24"::"a"(wheel[i]));
-		if (i == sizeof wheel)
-			i = 0;
-		else
-			++i;
-	}
-
-	while(1);
 }
 
 /**
@@ -353,7 +319,7 @@ void user_test()
 void init()
 {
 	cli();
-	
+
 	setup_idt();
 	init_pic();
 
@@ -375,14 +341,44 @@ void init()
 	__asm__ ( "ltrw %%ax \n\t" ::"a"(SEL_CUR_TSS) );
 	__asm__ ( "lldt %%ax \n\t" ::"a"(SEL_CUR_LDT) );
 
+/*	
 	current = &task_init;
-
 	new_task( &task1, do_task1, 0x7000, 0x7800 );
-	new_task( &task2, do_task2, 0x8000, 0x8800 );	
-	
+	new_task( &task2, do_task2, 0x8000, 0x8800 );
+*/
 	sti();
-	set_cursor(0, 0);
 
+	delay(1000);
+//	scroll_up(VIDEO_ROWS);
+	set_cursor(0, 0);
+	early_kprint ( PL_DEBUG, "compute cpus mips...\n" );
+
+	uint32 start = jiffies;
+	uint32 i = 0, j = 0;
+	for ( j = 0; j < 10; j++ ) {
+		while ( i < 1000000 ) {
+			i++;
+		}
+		i = j + 1;
+	}
+	
+	uint32 ticks = jiffies - start;
+	int mips = HZ/ticks;
+	int ips = mips;
+	if ( mips == 0 )
+		ips = HZ*10/ticks;
+	else
+		ips = 10*mips;
+	
+	early_kprint( PL_DEBUG, "MIPS: %d, IPS: %d\n", mips, ips );
+	delay(1000);
+
+	cli();
+	current = &task_init;	
+//	new_task( &task1, do_task1, 0x7000, 0x7800 );
+//	new_task( &task2, do_task2, 0x8000, 0x8800 );
+	sti();
+	
 	__asm__ __volatile__ (
 		"mov %%esp, %%eax\n\t"
 		"pushl %0        \n\t"
@@ -391,25 +387,9 @@ void init()
 		"pushl %1        \n\t"
 		"pushl %2        \n\t"
 		"iret            \n\t"		
-//		::"i"(SEL_USER_DATA), "i"(SEL_USER_CODE), "i"(user_test)
 		::"i"(SEL_USER_DATA), "i"(SEL_USER_CODE), "i"(do_init_task)
 		);
 
-#if 0
-	int i = 0;
-	int x = 0, y = 0;
-	while(1) {
-		get_cursor( &x, &y );
-		set_cursor( 0, 10 );
-		uint32 tick = jiffies;
-		if ( (tick % 100) == 0 )
-			early_kprint( PL_WARN, "%d", i );
-		i++;
-		
-		set_cursor( x, y );
-	}
-	
-	early_kprint( PL_INFO, "after while\n" );
-#endif
-	
+	early_kprint( PL_INFO, "HALT\n" );
+	halt();
 }

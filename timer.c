@@ -23,11 +23,10 @@ uint32 jiffies = 0;
 
 void do_timer()
 {
-	cli();
 	jiffies++;
 	int x, y;
 	get_cursor(&x, &y);
-	set_cursor(74, 24);
+	set_cursor(VIDEO_COLUMNS-4, VIDEO_ROWS-1);
 	early_kprint( PL_WARN, "%d", jiffies/HZ );
 	set_cursor(x, y);
 
@@ -35,13 +34,15 @@ void do_timer()
 	// this is necessary because we programmed pic to manual mode
 	outb( 0x20, 0x20 );
 
-	// schedule 5 times a second
-	byte schedule = (jiffies % (HZ/5) == 0);
-	if ( schedule ) {
+	cli();	
+	// schedule 10 times a second
+	byte schedule = (jiffies % (HZ/2) == 0);
+	if ( current && schedule ) {
+		
 		scheduler();
 	}
-	sti();
-	
+
+//	sti();
 }
 
 void delay(int msecs)
@@ -50,4 +51,10 @@ void delay(int msecs)
 	uint32 start = jiffies;
 	while ( jiffies - start < ticks )
 		;
+}
+
+//TODO: need to compute cpu speed IPS
+void spindealy(int msecs)
+{
+//	uint32 ticks = 
 }

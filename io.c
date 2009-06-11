@@ -330,6 +330,8 @@ void scroll_up(int n)
 		: "D"(dest), "c"(size)
 		: "eax"
 		);
+
+	screen_y = VIDEO_ROWS - n;
 }
 
 
@@ -348,7 +350,7 @@ void forward_cursor()
 	if ( need_scroll() ) {
 		scroll_up(1);
 		screen_x = 0;
-		screen_y = VIDEO_COLUMNS - 1;
+		screen_y = VIDEO_ROWS - 1;
 		
 	} else {
 		if ( screen_x == VIDEO_COLUMNS-1 ) {

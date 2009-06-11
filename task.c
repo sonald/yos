@@ -6,14 +6,15 @@ struct task_struct *current = NULL;
 struct task_struct task_init = {
 	.tss = {
 		.link = 0,
-		.esp0 = (uint32)0x8000,
+		.esp0 = (uint32)0x6800,
 		.ss0 = SEL_DATA,
 		.esp1 = 0,
 		.ss1 = 0,
 		.esp2 = 0x6000,
 		.ss2 = SEL_USER_DATA,
 		.cr3 = 0,
-		.eip = 0,
+//		.eip = (uint32)(do_init_task+18),
+		.eip = 0,		
 		.eflags = 0,
 		.eax = 0,
 		.ecx = 0,
@@ -41,7 +42,9 @@ struct task_struct task_init = {
 	.state = TASK_RUNNING,
 	.priority = DEFAULT_PRIO,
 	
-	.next = NULL
+	.next = NULL,
+	.sched_prev = &task_init,
+	.sched_next = &task_init	
 };
 
 struct task_struct task1 = {
@@ -70,11 +73,11 @@ void do_init_task()
 {
 	__asm__ __volatile__ (
 		"mov $0xf, %%eax   \n\t"
-		"mov %%eax, %%ds \n\t"
-		"mov %%eax, %%fs \n\t"
-		"mov %%eax, %%gs \n\t"
-		"mov $0x20, %%eax \n\t"
-		"mov %%eax, %%es \n\t"
+		"mov %%eax, %%ds   \n\t"
+		"mov %%eax, %%fs   \n\t"
+		"mov %%eax, %%gs   \n\t"
+		"mov $0x20, %%eax  \n\t"
+		"mov %%eax, %%es   \n\t"
 		:::"eax"
 		);
 
@@ -83,10 +86,15 @@ void do_init_task()
  
 	for (;;) {
 		__asm__ ("movb  %%al,   0xb8000+160*24"::"a"(wheel[i]));
-		if (i == sizeof wheel)
+
+		delay(1000);
+		early_kprint ( PL_DEBUG, "C(%d) ", i );
+		
+		if (i == sizeof wheel - 1)
 			i = 0;
 		else
 			++i;
+		
 	}
 }
 
@@ -106,21 +114,31 @@ void new_task(struct task_struct *task, void (*entry)(), uint32 esp0, uint32 esp
 
 	task->next = current->next;
 	current->next = task;
+
+	task->sched_next = current->sched_next;
+	current->sched_next->sched_prev = task;
+	current->sched_next = task;
+
+	task->sched_prev = current;
+	
 	task->state = TASK_READY;
 }
 
 void scheduler()
 {
-//	early_kprint( PL_DEBUG, "scheduler\n" );
-	
 	struct task_struct *l = &task_init;
 	struct task_struct *next_run = NULL;
 	int max_prio = 0;
 
-	do {
-		if ( l->state == TASK_DEAD )
-			continue;
+	int x =0, y = 0;
+	get_cursor( &x, &y );
 
+	do {
+		if ( l->state == TASK_DEAD ) {
+			l = l->sched_next;
+			continue;
+		}
+		
 		if ( l->state == TASK_READY ) {
 			if ( l->priority > max_prio ) {
 				max_prio = l->priority;
@@ -128,41 +146,21 @@ void scheduler()
 			} 
 		}
 
-		l = l->next;
-	} while ( l != NULL );
+		l = l->sched_next;
+	} while ( l != &task_init );
 
+	set_cursor( 5, VIDEO_ROWS-1 );	
 	if ( max_prio == 0 ) {
-		int x =0, y = 0;
-		get_cursor( &x, &y );
-		set_cursor( 5, VIDEO_ROWS-1 );
-		early_kprint ( PL_DEBUG, "scheduler: recount priority" );
-		// busy delay here
-//		set_cursor( 5, VIDEO_ROWS-1 );		
-//		early_kprint ( PL_DEBUG, "                           " );
+		early_kprint ( PL_DEBUG, "CYCLE" );
 		
 		for ( l = &task_init; l != NULL; l = l->next ) {
 			l->priority = DEFAULT_PRIO;
 		}
-
-		set_cursor( x, y );
-	}
-
+	} else 
+		early_kprint ( PL_DEBUG, "     " );
+	
 	if ( next_run == NULL )
 		next_run = &task_init;
-	
-/*
-	int n = 0;
-	while ( l != NULL ) {
-		n++;
-		l = l->next;
-	}
-	early_kprint( PL_DEBUG, "total %d tasks\n", n );
-
-	if ( task_init.next != NULL ) {
-		early_kprint( PL_DEBUG, "next task\n" );
-		next_run = task_init.next;
-	}
-*/
 	
 	next_run->priority--;
 
@@ -173,11 +171,23 @@ void scheduler()
 	next_run->state = TASK_RUNNING;	
 	current = next_run;
 
-	/* __asm__ ( "ltrw %%ax \n\t" ::"a"(SEL_CUR_TSS) ); */
-	/* __asm__ ( "lldt %%ax \n\t" ::"a"(SEL_CUR_LDT) ); */
+	set_cursor( 10, VIDEO_ROWS-1 );
+	if ( current == &task_init ) {
+		early_kprint ( PL_DEBUG, "INIT(%d)", jiffies );
+	} else {
+		early_kprint ( PL_DEBUG, "USER(%d)", jiffies );		
+	}
+	set_cursor( x, y );
 
+#if 1
 	__asm__ __volatile__ (
 		"ljmp %0, $0 \n\t"
 		::"i"(SEL_CUR_TSS)
 		);
+#endif
+	
+	get_cursor( &x, &y );
+	set_cursor( 25, VIDEO_ROWS-1 );
+	early_kprint ( PL_DEBUG, "RET_SCHED(%d)", jiffies );
+	set_cursor( x, y );
 }
