@@ -1,0 +1,3 @@
+1. when go to interrupt-handler by interrupt- or trap- gate, if CPL numerically great
+than ISR, stack switch occurs. and info gets from current TSS.x
+2. SEL_CODE must point to a noncomfirm code segment!

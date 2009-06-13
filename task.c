@@ -14,7 +14,8 @@ struct task_struct task_init = {
 		.ss2 = SEL_USER_DATA,
 		.cr3 = 0,
 //		.eip = (uint32)(do_init_task+18),
-		.eip = 0,		
+		.eip = (uint32)(do_init_task),		
+//		.eip = 0,		
 		.eflags = 0,
 		.eax = 0,
 		.ecx = 0,
@@ -124,6 +125,17 @@ void new_task(struct task_struct *task, void (*entry)(), uint32 esp0, uint32 esp
 	task->state = TASK_READY;
 }
 
+static void dump_tss( struct tss_struct *tss )
+{
+	early_kprint( PL_DEBUG, "es %x, cs %x, ds %x, fs %x, gs %x, "
+				  "ss %x, esp %x, link %x\n",
+				  tss->es, tss->cs, tss->ds, tss->fs, tss->gs,
+				  tss->ss, tss->esp, tss->link );
+	
+	early_kprint( PL_DEBUG, "esp0 %x, ss0 %x, eip %x, eflags %x\n",
+				  tss->esp0, tss->ss0, tss->eip, tss->eflags );
+}
+
 void scheduler()
 {
 	struct task_struct *l = &task_init;
@@ -168,7 +180,12 @@ void scheduler()
 	setup_gdt_entry((SEL_CUR_LDT>>3), (uint32)&next_run->ldt, 0xfUL, (F_USER32_LDT));
 
 	current->state = TASK_READY;	
-	next_run->state = TASK_RUNNING;	
+	next_run->state = TASK_RUNNING;
+#ifdef _YOS_TASK_DEBUG
+	struct tss_struct old_tss1, old_tss2;
+	memcpy((char*)&old_tss1, (char*)&current->tss, sizeof(struct tss_struct));
+	memcpy((char*)&old_tss2, (char*)&next_run->tss, sizeof(struct tss_struct));
+#endif
 	current = next_run;
 
 	set_cursor( 10, VIDEO_ROWS-1 );
@@ -179,11 +196,34 @@ void scheduler()
 	}
 	set_cursor( x, y );
 
-#if 1
+#ifdef _YOS_TASK_DEBUG
+	early_kprint( PL_DEBUG, "before switch, current tss & next task tss (%d)\n",
+		jiffies );
+	dump_tss(&old_tss1);	
+	dump_tss(&old_tss2);
+#endif
+	
 	__asm__ __volatile__ (
 		"ljmp %0, $0 \n\t"
 		::"i"(SEL_CUR_TSS)
 		);
+
+	/**
+	 * Situation 1: when only task_init created
+	 * when ljmp executed, ip after ljmp is saved to old TSS.
+	 * why? because I use interrupt-gate towards exception handling,
+	 * so no task switch occurs, exception handler represent current
+	 * task to execute. so current task's next instruction address
+	 * ( here is right after ljmp ) is saved as eip into TSS.
+	 * it seems that qemu has a bug of this, bochs and vmware is right.
+	 * Situation 2: when there are more than one task
+	 */
+	// do some test to confirm that task switch actually occurs
+	// print old/current TSS, EIP etc
+#ifdef _YOS_TASK_DEBUG	
+	early_kprint( PL_DEBUG, "after switch, new tss (%d) \n", jiffies );
+	dump_tss(&current->tss);
+//	while(1);
 #endif
 	
 	get_cursor( &x, &y );

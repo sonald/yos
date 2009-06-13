@@ -3,7 +3,8 @@ AS=as -I./include
 DD=dd
 CC=gcc
 EXTRA_FLAGS= -nostdinc
-CFLAGS= -I./include $(EXTRA_FLAGS) -fno-builtin -Wall -g -D_YOS_HD_DEBUG
+DEBUG_FLAGS=-D_YOS_TASK_DEBUG -D_YOS_HD_DEBUG 
+CFLAGS= -I./include $(EXTRA_FLAGS) -fno-builtin -Wall -g -std=c99 
 CAT=cat
 
 all: kernel.img unittest

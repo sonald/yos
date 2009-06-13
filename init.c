@@ -375,8 +375,8 @@ void init()
 
 	cli();
 	current = &task_init;	
-//	new_task( &task1, do_task1, 0x7000, 0x7800 );
-//	new_task( &task2, do_task2, 0x8000, 0x8800 );
+	new_task( &task1, do_task1, 0x7000, 0x7800 );
+	new_task( &task2, do_task2, 0x8000, 0x8800 );
 	sti();
 	
 	__asm__ __volatile__ (
