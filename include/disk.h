@@ -19,27 +19,22 @@ typedef struct hd_chs_struct
 } hd_chs_t;
 
 // cylinder # start from 0
-#define cylinder_from_lba(_lba, _cap)  ({			\
-			(_lba) / ((_cap).heads*(_cap).sectors);	\
+#define cylinder_from_lba(_lba, _cap)  ({				\
+			(_lba) / ((_cap)->heads*(_cap)->sectors);	\
 		})
 
 // head # start from 0
-#define head_from_lba(_lba, _cap) ({								\
-			uint32 __rem = (_lba) % ((_cap).heads*(_cap).sectors);	\
-			__rem / (_cap).sectors;									\
+#define head_from_lba(_lba, _cap) ({									\
+			uint32 __rem = (_lba) % ((_cap)->heads*(_cap)->sectors);	\
+			__rem / (_cap)->sectors;									\
 		})
 
 // sector number start from 1
-#define sector_from_lba(_lba, _cap) ({								\
-			uint32 __rem = (_lba) % ((_cap).heads*(_cap).sectors);	\
-			__rem % (_cap).heads + 1;								\
+#define sector_from_lba(_lba, _cap) ({									\
+			uint32 __rem = (_lba) % ((_cap)->heads*(_cap)->sectors);	\
+			__rem % (_cap)->heads + 1;									\
 		})
 
-extern uint32 chs_to_lba(hd_chs_t chs, hd_capacity_t disk);
-extern hd_chs_t lba_to_chs(uint32 lba, hd_capacity_t disk);
-
-//FIXME: temp define of global disk
-extern struct hd_capacity_struct tmp_disk;
 
 // just copy from skelix
 #define HD_PORT_DATA         0x1f0
@@ -69,8 +64,8 @@ enum HD_CMD_ENUM {
 #define HD_STATUS_BUSY                0x80
 
 // return errno
-extern int disk_read(hd_capacity_t disk, uint32 logic_sector, unsigned char *buf);
-extern int disk_write(hd_capacity_t disk, uint32 logic_sector, unsigned char *buf);
+extern int disk_read(const hd_capacity_t *disk, uint32 logic_sector, unsigned char *buf);
+extern int disk_write(const hd_capacity_t *disk, uint32 logic_sector, unsigned char *buf);
 
 typedef struct partition_struct 
 {
@@ -88,6 +83,8 @@ typedef struct dpt_struct
 	partition_t partitions[4];
 } dpt_t;
 	
-extern dpt_t read_dpt(hd_capacity_t disk);
+extern int read_dpt(const hd_capacity_t *disk);
+extern void setup_dpt(const hd_capacity_t *disk);
 
+#define YOS_FS 0x2e
 #endif

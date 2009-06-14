@@ -4,9 +4,12 @@
 
 romimage: file=/home/sonald/prefix/share/bochs/BIOS-bochs-latest
 megs: 16
+vga: extension=vbe
+
 #floppya: image=./kernel.img, status=inserted
 floppya: 1_44=./kernel.img, status=inserted
 ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
+ata0-master: type=disk, mode=flat, path=/home/sonald/svn/yos/cdisk, cylinders=208, heads=16, spt=63
 boot: floppy
 log: bochsout.txt
 mouse: enabled=1

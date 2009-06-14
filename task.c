@@ -125,6 +125,7 @@ void new_task(struct task_struct *task, void (*entry)(), uint32 esp0, uint32 esp
 	task->state = TASK_READY;
 }
 
+#ifdef _YOS_TASK_DEBUG
 static void dump_tss( struct tss_struct *tss )
 {
 	early_kprint( PL_DEBUG, "es %x, cs %x, ds %x, fs %x, gs %x, "
@@ -135,6 +136,7 @@ static void dump_tss( struct tss_struct *tss )
 	early_kprint( PL_DEBUG, "esp0 %x, ss0 %x, eip %x, eflags %x\n",
 				  tss->esp0, tss->ss0, tss->eip, tss->eflags );
 }
+#endif
 
 void scheduler()
 {
@@ -161,15 +163,15 @@ void scheduler()
 		l = l->sched_next;
 	} while ( l != &task_init );
 
-	set_cursor( 5, VIDEO_ROWS-1 );	
+	set_cursor( 7, VIDEO_ROWS-1 );	
 	if ( max_prio == 0 ) {
-		early_kprint ( PL_DEBUG, "CYCLE" );
+		early_kprint ( PL_DEBUG, "L" );
 		
 		for ( l = &task_init; l != NULL; l = l->next ) {
 			l->priority = DEFAULT_PRIO;
 		}
 	} else 
-		early_kprint ( PL_DEBUG, "     " );
+		early_kprint ( PL_DEBUG, " " );
 	
 	if ( next_run == NULL )
 		next_run = &task_init;

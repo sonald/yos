@@ -26,6 +26,7 @@ extern void machine_check_exception();
 
 extern void timer();
 extern void keyboard_handler();
+extern void hd_handler();
 
 extern void default_isr();
 

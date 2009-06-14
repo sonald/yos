@@ -24,6 +24,7 @@
 	// IRQs
 	.global timer
 	.global keyboard_handler
+	.global hd_handler
 	
 	.global default_isr
 	.global isr
@@ -100,6 +101,20 @@
 	
 	define_isr timer, 32, 0
 	define_isr keyboard_handler, 33, 0	
+	define_isr _irq2,	34, 0		
+	define_isr _irq3,	35, 0				
+	define_isr _irq4,	36, 0				
+	define_isr _irq5,	37, 0				
+	define_isr _irq6,	38, 0				
+	define_isr _irq7,	39, 0				
+	define_isr _irq8,	40, 0				
+	define_isr _irq9,	41, 0				
+	define_isr _irq10,	42, 0				
+	define_isr _irq11,	43, 0				
+	define_isr _irq12,	44, 0					
+	define_isr _irq13,	45, 0				
+	define_isr hd_handler,	46, 0				
+	define_isr _irq15,	47, 0				
 
 isr:
 	.4byte 	divide_zero,  			do_divide_zero
@@ -138,6 +153,22 @@ isr:
 
 	.4byte timer,				do_timer
 	.4byte keyboard_handler,		do_keyboard
+	.4byte _irq2,				do_reserved
+	.4byte _irq3,				do_reserved
+	.4byte _irq4,				do_reserved
+	.4byte _irq5,				do_reserved
+	.4byte _irq6,				do_reserved
+	.4byte _irq7,				do_reserved
+	.4byte _irq8,				do_reserved
+	.4byte _irq9,				do_reserved
+	.4byte _irq10,				do_reserved
+	.4byte _irq11,				do_reserved
+	.4byte _irq12,				do_reserved	
+	.4byte _irq13,				do_reserved
+	.4byte hd_handler,			do_reserved
+	.4byte _irq15,				do_reserved
+
+	
 isr_common:
 	/**
 	stack order of isr:

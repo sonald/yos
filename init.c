@@ -5,6 +5,7 @@
 #include <keyboard.h>
 #include <task.h>
 #include <user.h>
+#include <disk.h>
 
 //////////////////////////////  testing routines  //////////////////////////////
 
@@ -316,6 +317,14 @@ void setup_gdt_entry(int pos, uint32 base, uint32 limit, uint32 attrs)
  * seting up all ISRs and other initialization
  */
 
+//TODO:  a tmp disk with capacity about 102MB
+struct hd_capacity_struct tmp_disk = {
+	.cylinders = 208,
+	.heads = 16,
+	.sectors = 63,
+	.drive = 0
+};
+	
 void init()
 {
 	cli();
@@ -330,9 +339,6 @@ void init()
 	/* setup_gdt_entry(SEL_USER_DATA>>3, 0UL, 0xffffUL, (F_USER32_DATA)); */
 	/* default_ldt[0] = gdt[SEL_USER_CODE>>3]; */
 	/* default_ldt[1] = gdt[SEL_USER_DATA>>3]; */
-	/* default_ldt[0] = 0x00c0fa0000008fffULL; */
-	/* default_ldt[1] = 0x00c0f20000008fffULL; */
- 
 	
 	//for init task's TSS & LDT
 	setup_gdt_entry((SEL_CUR_TSS>>3), (uint32)&task_init.tss, 0x67UL, (F_USER32_TSS));
@@ -341,21 +347,26 @@ void init()
 	__asm__ ( "ltrw %%ax \n\t" ::"a"(SEL_CUR_TSS) );
 	__asm__ ( "lldt %%ax \n\t" ::"a"(SEL_CUR_LDT) );
 
-/*	
-	current = &task_init;
-	new_task( &task1, do_task1, 0x7000, 0x7800 );
-	new_task( &task2, do_task2, 0x8000, 0x8800 );
-*/
+	/* unsigned char imf = inb(0x21); */
+	/* outb( imf & 0xfb, 0x21 ); */
+	/* imf = inb(0xa1); */
+	/* outb( imf & 0x0, 0xa1 ); */
+
+	if ( read_dpt(&tmp_disk) < 0 ) {
+		setup_dpt(&tmp_disk);
+		read_dpt(&tmp_disk);
+	}
+	
 	sti();
 
 	delay(1000);
-//	scroll_up(VIDEO_ROWS);
+	scroll_up(VIDEO_ROWS);
 	set_cursor(0, 0);
 	early_kprint ( PL_DEBUG, "compute cpus mips...\n" );
 
 	uint32 start = jiffies;
 	uint32 i = 0, j = 0;
-	for ( j = 0; j < 10; j++ ) {
+	for ( j = 0; j < 4; j++ ) {
 		while ( i < 1000000 ) {
 			i++;
 		}
@@ -366,9 +377,9 @@ void init()
 	int mips = HZ/ticks;
 	int ips = mips;
 	if ( mips == 0 )
-		ips = HZ*10/ticks;
+		ips = HZ*4/ticks;
 	else
-		ips = 10*mips;
+		ips = 4*mips;
 	
 	early_kprint( PL_DEBUG, "MIPS: %d, IPS: %d\n", mips, ips );
 	delay(1000);

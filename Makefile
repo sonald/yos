@@ -4,14 +4,14 @@ DD=dd
 CC=gcc
 EXTRA_FLAGS= -nostdinc
 DEBUG_FLAGS=-D_YOS_TASK_DEBUG -D_YOS_HD_DEBUG 
-CFLAGS= -I./include $(EXTRA_FLAGS) -fno-builtin -Wall -g -std=c99 
+CFLAGS= -I./include $(EXTRA_FLAGS) -fno-builtin -Wall -g -D_YOS_HD_DEBUG
 CAT=cat
 
 all: kernel.img unittest
 
 kernel.img: bootsect kernel
 	$(CAT) bootsect kernel > $@
-	$(DD) if=/dev/zero of=$@ bs=512 seek=32 count=2848
+	$(DD) if=/dev/zero of=$@ bs=512 seek=40 count=2840
 
 unittest: test.c io.c
 	$(CC) -g -Wall -fno-builtin -D_YOS_LIBTEST -o $@ $^ -I./include
@@ -23,7 +23,7 @@ kernel: kernel.o isr.o io.o timer.o keyboard.o task.o user.o disk.o init.o
 	$(LD) --oformat binary -N -o $@ -e _kernel_start -Ttext 0x0000 $^
 	$(LD) -N -o $@.elf -e _kernel_start -Ttext 0x0000 $^
 	objdump -D $@.elf > kernel.img.S
-	objcopy --only-keep-debug kernel.elf kernel.dbg
+#	objcopy --only-keep-debug kernel.elf kernel.dbg
 
 kernel.o: kernel.s 
 	$(AS) -a -o $@ $< > $<.map

@@ -14,16 +14,20 @@ int goto_userlevel()
 
 void do_task1()
 {
-	/* for ( ;; ) { */
-	/* 	__asm__ ( "incb 0xb8000+160*23+2" ); */
-	/* } */
-
-	int i = 0;
 	for ( ;; ) {
-		early_kprint( PL_DEBUG, "A(%d) ", i );
+		__asm__ (
+			"incb 0xb8000+160*24+4        \n\t"
+			"movb $0x17, 0xb8000+160*24+5 \n\t"
+			);
 		delay(300);
-		i++;
 	}
+
+	/* int i = 0; */
+	/* for ( ;; ) { */
+	/* 	early_kprint( PL_DEBUG, "A(%d) ", i ); */
+	/* 	delay(300); */
+	/* 	i++; */
+	/* } */
 
 #if 0
 	int x = 0, y = 0;
@@ -47,9 +51,13 @@ void do_task1()
 
 void do_task2()
 {
-	/* for ( ;; ) { */
-	/* 	__asm__ ( "incb 0xb8000+160*23+4" ); */
-	/* } */
+	for ( ;; ) {
+		__asm__ (
+			"addb $2, 0xb8000+160*24+6    \n\t"
+			"movb $0x17, 0xb8000+160*24+7 \n\t"
+			);
+		delay(400);
+	}
 
 	int i = 0;
 	for ( ;; ) {

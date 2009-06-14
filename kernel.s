@@ -116,7 +116,7 @@ _code32:
 	movl	%eax, %gs
 
 	movl	%eax, %ss
-	movl	$0x4800, %esp
+	movl	$0x80000, %esp
 	
 	movl 	$SEL_VIDEO, %eax
 	movl	%eax, %es
