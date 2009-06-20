@@ -317,14 +317,6 @@ void setup_gdt_entry(int pos, uint32 base, uint32 limit, uint32 attrs)
  * seting up all ISRs and other initialization
  */
 
-//TODO:  a tmp disk with capacity about 102MB
-struct hd_capacity_struct tmp_disk = {
-	.cylinders = 208,
-	.heads = 16,
-	.sectors = 63,
-	.drive = 0
-};
-	
 void init()
 {
 	cli();
@@ -352,10 +344,12 @@ void init()
 	/* imf = inb(0xa1); */
 	/* outb( imf & 0x0, 0xa1 ); */
 
-	if ( read_dpt(&tmp_disk) < 0 ) {
-		setup_dpt(&tmp_disk);
-		read_dpt(&tmp_disk);
+	if ( read_dpt(&tmp_hd0) < 0 ) {
+		setup_dpt(&tmp_hd0);
+		read_dpt(&tmp_hd0);
 	}
+
+	while(1);
 	
 	sti();
 

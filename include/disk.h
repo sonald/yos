@@ -3,6 +3,9 @@
 
 #include <common.h>
 
+//TODO: this should be detected from io probe
+#define SECT_SIZE 512
+
 typedef struct hd_capacity_struct 
 {
 	uint32 cylinders;
@@ -63,9 +66,6 @@ enum HD_CMD_ENUM {
 #define HD_STATUS_DRIVE_READY         0x40 
 #define HD_STATUS_BUSY                0x80
 
-// return errno
-extern int disk_read(const hd_capacity_t *disk, uint32 logic_sector, unsigned char *buf);
-extern int disk_write(const hd_capacity_t *disk, uint32 logic_sector, unsigned char *buf);
 
 typedef struct partition_struct 
 {
@@ -82,9 +82,26 @@ typedef struct dpt_struct
 	byte valid;  
 	partition_t partitions[4];
 } dpt_t;
-	
-extern int read_dpt(const hd_capacity_t *disk);
-extern void setup_dpt(const hd_capacity_t *disk);
 
-#define YOS_FS 0x2e
+typedef struct disk_struct
+{
+	hd_capacity_t disk_cap;
+	dpt_t disk_dpt;
+} disk_t;
+
+extern disk_t tmp_hd0;
+
+/**
+ * read disk dpt info, and fill it in disk param
+ */
+extern int read_dpt(disk_t *disk);
+/**
+ * write disk dpt info into physical disk
+ */
+extern void setup_dpt(const disk_t *disk);
+
+// return errno
+extern int disk_read(const disk_t *disk, uint32 logic_sector, unsigned char *buf);
+extern int disk_write(const disk_t *disk, uint32 logic_sector, unsigned char *buf);
+
 #endif

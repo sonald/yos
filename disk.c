@@ -7,18 +7,31 @@
 #else
 #define hd_debug(...) 
 #endif												
+
+//TODO:  a tmp disk with capacity about 102MB
+disk_t tmp_hd0 = {
+	.disk_cap = {
+		.cylinders = 208,
+		.heads = 16,
+		.sectors = 63,
+		.drive = 0
+	},
+	.disk_dpt = {
+		.valid = 0
+	}
+};
 	
 // bad implementation, without quite important error-checking,
 // may not work in real-world hard drive
-int disk_read(const hd_capacity_t *disk, uint32 logic_sector, unsigned char *buf)
+int disk_read(const disk_t *disk, uint32 logic_sector, unsigned char *buf)
 {
 	if ( buf == NULL )
 		return -1;
 
 	struct hd_chs_struct chs = { 0, 0, 0 };
-	chs.cylinder = cylinder_from_lba(logic_sector, disk);
-	chs.head = head_from_lba(logic_sector, disk);
-	chs.sect = sector_from_lba(logic_sector, disk);
+	chs.cylinder = cylinder_from_lba(logic_sector, &disk->disk_cap);
+	chs.head = head_from_lba(logic_sector, &disk->disk_cap);
+	chs.sect = sector_from_lba(logic_sector, &disk->disk_cap);
 	hd_debug( "chs(c %d, h %d, s %d)\n", chs.cylinder, chs.head, chs.sect );
 	
 	byte status = inb( HD_PORT_STATUS );
@@ -71,7 +84,7 @@ int disk_read(const hd_capacity_t *disk, uint32 logic_sector, unsigned char *buf
 		hd_debug( "send data failed\n" );
 	}
 
-	hd_debug( "read mbr flag: %x\n", *(unsigned*)&buf[0x1fe] );
+	hd_debug( "read mbr flag: %x\n", *(unsigned short*)(buf+0x1fe) );
 
 	delay(1);
 	byte remains = inb( HD_PORT_SECT_COUNT );
@@ -97,7 +110,7 @@ static const char* partTypeStr(byte type)
 		"DOS 16 bit FAT",
 		"Extended DOS partition",
 		"DOS 16 bit FAT",
-		"OS/2 High Performance",
+		"OS/2 High Perform",
 		"Windows NT (NTFS)",
 		"Advanced Unix",
 		"OS/2 Boot Manager"
@@ -111,30 +124,33 @@ static const char* partTypeStr(byte type)
 		return types[type];
 }
 
-// parse a partition for buf of 16 bytes
-static void parse_partition( unsigned char *buf )
+/*
+ * parse a partition for buf of 16 bytes
+ * parsed data is filled in part
+ */
+static void parse_partition( unsigned char *buf, partition_t *part )
 {
-	partition_t part = {
-		.used = 0
-	};
+	if ( !part || part->used )
+		return;
 
-	part.boot = buf[0] == 0 ? 0 : ( buf[0] == 0x80 ? 1: 0 );
-	part.offset = *(uint32*)(buf + 0x08);
-	part.sectors = *(uint32*)(buf + 0x0c);
-	part.part_type = buf[0x04];
+	part->used = 1;
+	part->boot = buf[0] == 0 ? 0 : ( buf[0] == 0x80 ? 1: 0 );
+	part->offset = *(uint32*)(buf + 0x08);
+	part->sectors = *(uint32*)(buf + 0x0c);
+	part->part_type = buf[0x04];
 
-	int size = part.sectors * 512;
+	int size = part->sectors * 512;
 	int kilo = size / 1024;
 	int mega = kilo / 1024;
 	int giga = mega / 1024;
 	const char *str_size = (giga? "G": ( mega? "M" : (kilo? "K" : "B")));
 	size = (giga? giga: ( mega? mega : (kilo? kilo : size)));	
 	hd_debug( "0x%x\t%s\t\t\t0x%x\t%d%s\n",
-			  part.boot, partTypeStr(part.part_type),
-			  part.offset, size, str_size );
+			  part->boot, partTypeStr(part->part_type),
+			  part->offset, size, str_size );
 }
 
-void setup_dpt(const hd_capacity_t *disk)
+void setup_dpt(const disk_t *disk)
 {
 	early_kprint( PL_DEBUG, "setting up default DPT\n" );
 	
@@ -151,12 +167,8 @@ void setup_dpt(const hd_capacity_t *disk)
 	disk_write( disk, 0, mbr );
 }
 
-int read_dpt(const hd_capacity_t *disk)
+int read_dpt(disk_t *disk)
 {
-	dpt_t dpt = {
-		.valid = 0
-	};
-
 	unsigned char sect_buf[512];
 	if ( disk_read(disk, 0, sect_buf) < 0 ) {
 		early_kprint( PL_ERROR, "read mbr failed\n" );
@@ -178,22 +190,23 @@ int read_dpt(const hd_capacity_t *disk)
 	int i = 0;
 	for ( i = 0; i < 4; i++ ) {
 		early_kprint( PL_DEBUG, "%d\t", i );
-		parse_partition(sect_buf + offsets[i]);		
+		parse_partition( sect_buf + offsets[i], &disk->disk_dpt.partitions[i] );
 	}
 
+	disk->disk_dpt.valid = 1;
 	return 0;
 }
 
-int disk_write(const hd_capacity_t *disk, uint32 logic_sector, unsigned char *buf)
+int disk_write(const disk_t *disk, uint32 logic_sector, unsigned char *buf)
 {
 	//TODO: check if logic_sector is inside disk
-	if ( buf == NULL )
+	if ( buf == NULL || !disk )
 		return -1;
 	
 	struct hd_chs_struct chs = { 0, 0, 0 };
-	chs.cylinder = cylinder_from_lba(logic_sector, disk);
-	chs.head = head_from_lba(logic_sector, disk);
-	chs.sect = sector_from_lba(logic_sector, disk);
+	chs.cylinder = cylinder_from_lba(logic_sector, &disk->disk_cap);
+	chs.head = head_from_lba(logic_sector, &disk->disk_cap);
+	chs.sect = sector_from_lba(logic_sector, &disk->disk_cap);
 	hd_debug( "chs(c %d, h %d, s %d)\n", chs.cylinder, chs.head, chs.sect );
 
 	byte status = inb( HD_PORT_STATUS );
