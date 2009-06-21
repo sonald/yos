@@ -21,7 +21,7 @@ disk_t tmp_hd0 = {
 		.valid = 0
 	}
 };
-	
+
 // bad implementation, without quite important error-checking,
 // may not work in real-world hard drive
 int disk_read(const disk_t *disk, uint32 logic_sector, unsigned char *buf)
