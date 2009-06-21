@@ -110,12 +110,6 @@ char* early_itos(int i, int base)
 	char *p = buf;
 	*p = '0';
 	
-	/* while ( divider ) { */
-	/* 	remainder = divider%base; */
-	/* 	divider = divider/base; */
-	/* 	*p++ = "0123456789ABCDEF"[remainder]; */
-	/* } */
-
 	do {
 		remainder = divider%base;
 		divider = divider/base;
@@ -383,15 +377,19 @@ void early_video_putc(char c, print_level_color_t color)
 		default:
 			break;
 		}
+		update_cursor();
 		break;
 		
 	case '\t':
-		if ( screen_x + TAB_WIDTH < VIDEO_COLUMNS )
+		if ( screen_x + TAB_WIDTH < VIDEO_COLUMNS ) {
 			screen_x = screen_x + TAB_WIDTH - (screen_x % TAB_WIDTH);
+			update_cursor();
+		}
 		break;
 		
 	case '\r':
 		screen_x = 0;
+		update_cursor();
 		break;
 
 	default:

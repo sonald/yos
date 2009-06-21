@@ -3,8 +3,9 @@ AS=as -I./include
 DD=dd
 CC=gcc
 EXTRA_FLAGS= -nostdinc
-DEBUG_FLAGS=-D_YOS_TASK_DEBUG -D_YOS_HD_DEBUG 
-CFLAGS= -I./include $(EXTRA_FLAGS) -fno-builtin -Wall -g -D_YOS_HD_DEBUG
+#DEBUG_FLAGS=-D_YOS_TASK_DEBUG -D_YOS_HD_DEBUG -D_YOS_FS_DEBUG
+DEBUG_FLAGS=-D_YOS_FS_DEBUG -D_YOS_HD_DEBUG
+CFLAGS= -I./include $(EXTRA_FLAGS) -fno-builtin -Wall -g $(DEBUG_FLAGS)
 CAT=cat
 
 all: kernel.img unittest
@@ -46,5 +47,5 @@ common.inc:
 .PHONY:	clean
 
 clean:
-	-rm bootsect kernel.img *.o kernel.img.S kernel.dbg kernel.elf unittest *.map kernel
+	-rm bootsect kernel.img *.o kernel.img.S kernel.elf unittest *.map kernel
 

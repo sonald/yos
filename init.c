@@ -6,7 +6,7 @@
 #include <task.h>
 #include <user.h>
 #include <disk.h>
-
+#include <fs.h>
 //////////////////////////////  testing routines  //////////////////////////////
 
 void test_io()
@@ -344,11 +344,14 @@ void init()
 	/* imf = inb(0xa1); */
 	/* outb( imf & 0x0, 0xa1 ); */
 
+//	outb( 0x0b, 0x3f6 );
 	if ( read_dpt(&tmp_hd0) < 0 ) {
 		setup_dpt(&tmp_hd0);
 		read_dpt(&tmp_hd0);
 	}
 
+	check_yfs(&tmp_hd0);
+	
 	while(1);
 	
 	sti();

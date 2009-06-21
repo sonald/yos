@@ -73,7 +73,7 @@ typedef struct partition_struct
 	byte boot;
 	hd_chs_t chs;
 	byte part_type;
-	uint32 offset;  
+	uint32 offset;  // start logical sector number 
 	uint32 sectors;
 } partition_t;
 	
