@@ -17,14 +17,14 @@ enum INODE_TYPE {
 // this struct compat in 2^^3, so a sector can have 512 / 8 = 64 inodes
 typedef struct yfs_inode_struct {
 	int i_mode;
-	int i_size;
+	int i_size;         // real size in bytes, size in blk can be calculated 
 	int i_timestamp;
 	uint32 i_block[5];  // block[3] is once-indirect block
 						// block[4] is twice-indirect block
 						// the rest is inplace data blocks
 } yfs_inode_t;
 
-typedef struct yfs_dir_entry_struct {
+typedef struct dir_entry_struct {
 	char d_name[MAX_FILENAME_SIZE];
 	int d_ino;
 } dir_entry_t;
@@ -57,11 +57,15 @@ typedef struct yfs_superblock_struct
 #define YFS_INODE_BITMAP_BLKS 1
 
 // 2k block ( 4 sectors )
+#define BITS_PER_SECT     (SECT_SIZE<<3)
 #define BLK_SIZE_IN_SECT  4
 #define BLK_SIZE          (SECT_SIZE*BLK_SIZE_IN_SECT)
 
-#define BITS_PER_BLK  (BLK_SIZE*8)
-#define INODES_PER_BLK (BLK_SIZE/sizeof(struct yfs_inode_struct))
+#define BITS_PER_BLK      (BLK_SIZE<<3)
+#define INODES_PER_SECT   (SECT_SIZE/sizeof(struct yfs_inode_struct))
+#define INODES_PER_BLK    (INODES_PER_SECT * BLK_SIZE_IN_SECT)
+
+#define YFS_ROOT_INODE_NUM 0
 
 // make it easier to calculate the offset of every section in a yfs file system
 #define ABS_BOOTSECT_SECT(sb)    ((sb).sb_offset)
@@ -91,5 +95,7 @@ extern uint32 yfs_alloc_block(const disk_t *disk, yfs_superblock_t *sb);
  */
 extern void yfs_free_block(const disk_t *disk, yfs_superblock_t *sb,
 						   uint32 sector);
+
+extern void check_root(const disk_t *disk, yfs_superblock_t *sb);
 
 #endif

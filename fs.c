@@ -170,7 +170,7 @@ uint32 yfs_alloc_block(const disk_t *disk, yfs_superblock_t *sb)
 			
 			setb(sect, b);
 			disk_write( disk, idx, sect );
-			return ABS_BOOTSECT_SECT(*sb) + n;
+			return ABS_BOOTSECT_SECT(*sb) + n*BLK_SIZE_IN_SECT;
 		}
 	}
 
@@ -180,16 +180,16 @@ uint32 yfs_alloc_block(const disk_t *disk, yfs_superblock_t *sb)
 void yfs_free_block(const disk_t *disk, yfs_superblock_t *sb, uint32 sector)
 {
 	if ( !disk || !sb )
-		return 0;
+		return;
 
 	unsigned char sect[SECT_SIZE];
 
-	int block_num = (sector - sb->sb_offset) / BLK_SIZE_IN_SECT;
-	int offset = (sector/BLK_SIZE_IN_SECT) / (SECT_SIZE<<3);
-	int offset_by_bmap = ABS_BMAP_SECT(*sb) + offset;
+	int block_num = (sector - ABS_BOOTSECT_SECT(*sb)) / BLK_SIZE_IN_SECT;
+
+	int offset_by_bmap = ABS_BMAP_SECT(*sb) + block_num/BITS_PER_SECT;
 	disk_read( disk, offset_by_bmap, sect );
 
-	int offset_in_sect = sector % bits_per_sect;
+	int offset_in_sect = block_num % BITS_PER_SECT;
 	if ( testb(sect, offset_in_sect) ) {
 		early_kprint( PL_ERROR, "block 0x%x is not allocated!\n" );
 		return;
@@ -197,5 +197,158 @@ void yfs_free_block(const disk_t *disk, yfs_superblock_t *sb, uint32 sector)
 	
 	clrb(sect, offset_in_sect);
 	disk_write( disk, offset_by_bmap, sect );
+	yfs_debug( "free block 0x%x\n", block_num );
 }
 
+int yfs_alloc_inode(const disk_t *disk, yfs_superblock_t *sb)
+{
+	if ( !disk || !sb )
+		return -1;
+
+	unsigned char sect[SECT_SIZE];
+	int imap_offset = ABS_IMAP_SECT(*sb);
+	int sects_of_imap = sb->sb_imap_blks * BLK_SIZE_IN_SECT;
+	int ino = -1;
+
+	int i = 0, b = 0;
+	for ( i = 0; i < sects_of_imap; ++i ) {
+		disk_read( disk, imap_offset + i, sect );
+		for ( b = 0; b < BITS_PER_SECT; b++ )
+			if ( !testb(sect, b) ) {
+				setb(sect, b);
+				disk_write( disk, imap_offset + i, sect );
+				ino = i * SECT_SIZE + b;
+				goto _alloc_finished;
+			}
+	}
+
+_alloc_finished:	
+	return ino;
+}
+
+void yfs_free_inode(const disk_t *disk, yfs_superblock_t *sb, int ino)
+{
+	if ( !disk || !sb )
+		return;
+
+	unsigned char sect[SECT_SIZE];
+	int imap_offset = ABS_IMAP_SECT(*sb);
+	int sects_of_imap = sb->sb_imap_blks * BLK_SIZE_IN_SECT;
+	int offset = imap_offset + ino / BITS_PER_SECT;
+	if ( offset >= sects_of_imap ) {
+		yfs_debug( "ino is out of imap bound, ignore\n" );
+		return;
+	}
+	
+	disk_read( disk, offset, sect );
+
+	int offset_in_sect = ino % BITS_PER_SECT;
+	if ( testb(sect, offset_in_sect) ) {
+		clrb( sect, offset_in_sect );
+		disk_write( disk, offset, sect );
+	} else {
+		early_kprint( PL_ERROR, "ino %d is not allocated yet!\n" );
+	}
+}
+
+/**
+ * get inode_t for ino, and fill it in inode, return it
+ */
+yfs_inode_t* yfs_iget(const disk_t *disk, yfs_superblock_t *sb, int ino,
+	yfs_inode_t *inode)
+{
+	if ( !disk || !sb || !inode )
+		return NULL;
+
+	unsigned char sect[SECT_SIZE];
+	
+	int offset = ino / INODES_PER_SECT + ABS_INODE_SECT(*sb);
+	disk_read( disk, offset, sect );
+
+	int offset_in_sect = (ino % INODES_PER_SECT) * sizeof(yfs_inode_t);
+	
+	memcpy((void*)inode, (sect + offset_in_sect), sizeof(yfs_inode_t));
+	return inode;
+}
+
+/**
+ * write inode into inode array
+ */
+void yfs_iput(const disk_t *disk, yfs_superblock_t *sb, int ino,
+	yfs_inode_t *inode)
+{
+	if ( !disk || !sb || !inode )
+		return;
+
+	unsigned char sect[SECT_SIZE];
+	
+	int offset = ino / INODES_PER_SECT + ABS_INODE_SECT(*sb);
+	disk_read( disk, offset, sect );
+
+	int offset_in_sect = (ino % INODES_PER_SECT) * sizeof(yfs_inode_t);
+	memcpy((sect+offset_in_sect), inode, sizeof(yfs_inode_t));
+	disk_write( disk, offset, sect );
+}
+
+void check_root(const disk_t *disk, yfs_superblock_t *sb)
+{
+	unsigned char sect[SECT_SIZE];
+
+	disk_read( disk, ABS_IMAP_SECT(*sb), sect );
+	if ( testb(sect, 0) ) {
+		yfs_iget(disk, sb, YFS_ROOT_INODE_NUM, &yfs_root_inode);
+		disk_read( disk, yfs_root_inode.i_block[0], sect );
+		dir_entry_t *de = (dir_entry_t*)sect;
+		if ( strcmp(de[0].d_name, ".") || de[0].d_ino
+			 || strcmp(de[1].d_name, "..") || de[1].d_ino != -1 ) {
+			early_kprint( PL_ERROR, "root is invalid, file system is invalid.\n" );
+		} else
+			yfs_debug( "Checking / fs\t\t\t\t\tCorrect\n" );
+		
+		return;
+	}
+		
+	int ino = yfs_alloc_inode(disk, sb);
+	if ( ino != YFS_ROOT_INODE_NUM ) {
+		yfs_debug( "request ino for root, but get %d\n", ino );
+		return;
+	}
+
+	yfs_root_inode.i_block[0] = yfs_alloc_block(disk, sb);
+	yfs_debug( "alloc block 0x%x for /\n", yfs_root_inode.i_block[0] );
+	yfs_root_inode.i_size = 2 * sizeof(dir_entry_t);
+	yfs_iput( disk, sb, YFS_ROOT_INODE_NUM, &yfs_root_inode );
+
+
+	memset( sect, 0, sizeof sect );
+	// create default . & .. entry
+	dir_entry_t *dot = (dir_entry_t*)sect;
+	dot->d_ino = YFS_ROOT_INODE_NUM;
+	early_strncpy(dot->d_name, ".", MAX_FILENAME_SIZE);
+
+	dir_entry_t *dotdot = ++dot;
+	dotdot->d_ino = -1;
+	early_strncpy(dotdot->d_name, "..", MAX_FILENAME_SIZE);
+	// write only first sector of block, cause only 2 entries
+	disk_write( disk, yfs_root_inode.i_block[0], sect );
+}
+
+void yfs_stat(const disk_t *disk, yfs_superblock_t *sb, int ino)
+{
+	if ( !disk || !sb )
+		return;
+
+	yfs_inode_t inode;
+	if ( yfs_iget(disk, sb, ino, &inode) < 0 ) {
+		yfs_debug( "get inode for %d failed.\n", ino );
+		return;
+	}
+
+	early_kprint( PL_INFO, "type: %s ", "" );
+	if ( inode.i_mode & FT_DIRECTORY ) {
+		
+	} else if ( inode.i_mode & FT_FILE ) {
+	}
+	
+	
+}

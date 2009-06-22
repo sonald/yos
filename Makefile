@@ -12,7 +12,7 @@ all: kernel.img unittest
 
 kernel.img: bootsect kernel
 	$(CAT) bootsect kernel > $@
-	$(DD) if=/dev/zero of=$@ bs=512 seek=40 count=2840
+	$(DD) if=/dev/zero of=$@ bs=512 seek=50 count=2830
 
 unittest: test.c io.c
 	$(CC) -g -Wall -fno-builtin -D_YOS_LIBTEST -o $@ $^ -I./include

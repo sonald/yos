@@ -81,6 +81,11 @@ extern char __early_buf[BUF_SIZE];
 char* early_itos(int i, int base);
 void early_strncpy(char* dest, const char *src, uint16 length);
 /**
+ * return >0 if src > dest, =0 if src == dest, <0 if src < dest
+ */
+int strcmp(const char *src, const char *dest);
+
+/**
  * return > 0, size of s, -1, error
  */
 int early_strlen(const char* s);

@@ -352,6 +352,18 @@ void init()
 
 	check_yfs(&tmp_hd0);
 	
+	unsigned char sect[SECT_SIZE];
+	yfs_superblock_t sb;
+	sb.sb_offset = tmp_hd0.disk_dpt.partitions[0].offset;
+	if ( disk_read( &tmp_hd0, ABS_SBLOCK_SECT(sb), sect ) >= 0 ) {
+		memcpy( &sb, sect, sizeof(yfs_superblock_t) );
+		if ( sb.sb_magic == YFS_MAGIC )
+			check_root(&tmp_hd0, &sb);
+		else
+			early_kprint( PL_DEBUG, "read superblock failed.\n" );
+	} else
+		early_kprint( PL_ERROR, "read superblock failed.\n" );
+	
 	while(1);
 	
 	sti();

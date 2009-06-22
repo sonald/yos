@@ -36,7 +36,7 @@ int disk_read(const disk_t *disk, uint32 logic_sector, unsigned char *buf)
 	hd_debug( "chs(c %d, h %d, s %d)\n", chs.cylinder, chs.head, chs.sect );
 	
 	byte status = inb( HD_PORT_STATUS );
-	hd_debug( "drive status: %x\n", status );
+//	hd_debug( "drive status: %x\n", status );
 	
 #if 0	/* only VMWare can pass this test, so comment it out */
 	while ( !(status & HD_STATUS_DRIVE_READY) ) {
@@ -216,7 +216,7 @@ int disk_write(const disk_t *disk, uint32 logic_sector, unsigned char *buf)
 	hd_debug( "chs(c %d, h %d, s %d)\n", chs.cylinder, chs.head, chs.sect );
 
 	byte status = inb( HD_PORT_STATUS );
-	hd_debug( "drive status: %x\n", status );
+//	hd_debug( "drive status: %x\n", status );
 	while ( !(status & HD_STATUS_DRIVE_READY) ) {
 		hd_debug( "drive is not ready\n" );
 		delay(1);

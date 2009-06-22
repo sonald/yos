@@ -1,7 +1,7 @@
 #include <io.h>
 #include <stdio.h>
 
-int main(int argc, char* argv[])
+void test1()
 {
 	char buf[] = "hello, yos";
 	char buf2[] = "YOS";
@@ -42,6 +42,26 @@ int main(int argc, char* argv[])
 	edx = 0;
 	prted = early_kprint( PL_ERROR, "EAX = %x EBX = %x ECX = %x EDX = %x \n", eax, ebx, ecx, edx );
 	printf("%s(%d)\n", __early_print_buf, prted);
+}
 
+void test2()
+{
+	if ( strcmp("123", "123") != 0 )
+		printf( "strcmp 1 error\n" );
+
+	if ( strcmp("123", "1234") >= 0 )
+		printf( "strcmp 2 error\n" );
+
+	if ( strcmp("1234", "123") <= 0 )
+		printf( "strcmp 3 error\n" );
+	
+	if ( strcmp("abeffe", "abfeefb") >= 0 )
+		printf( "strcmp 4 error\n" );
+	
+}
+
+int main(int argc, char* argv[])
+{
+	test2();
 	return 0;
 }

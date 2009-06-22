@@ -161,7 +161,29 @@ void early_strncpy(char* dest, const char *src, uint16 length)
 						   :
 						   : "D"(dest), "S"(src), "c"(size)
 						   : "eax" );
+//	dest[size-1] = '\0';
+}
 
+int strcmp(const char *src, const char *dest)
+{
+	if ( !src || !dest )
+		return -1;
+
+	while ( *src && *dest ) {
+		if ( *src > *dest )
+			return 1;
+		else if ( *src < *dest )
+			return -1;
+		src++;
+		dest++;
+	}
+
+	if ( *src > *dest )
+		return 1;
+	else if ( *src < *dest )
+		return -1;
+	else
+		return 0;
 }
 
 int early_strlen(const char* s)
