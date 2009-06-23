@@ -357,9 +357,11 @@ void init()
 	sb.sb_offset = tmp_hd0.disk_dpt.partitions[0].offset;
 	if ( disk_read( &tmp_hd0, ABS_SBLOCK_SECT(sb), sect ) >= 0 ) {
 		memcpy( &sb, sect, sizeof(yfs_superblock_t) );
-		if ( sb.sb_magic == YFS_MAGIC )
+		if ( sb.sb_magic == YFS_MAGIC ) {
 			check_root(&tmp_hd0, &sb);
-		else
+			yfs_stat(&tmp_hd0, &sb, YFS_ROOT_INODE_NUM);
+			
+		} else
 			early_kprint( PL_DEBUG, "read superblock failed.\n" );
 	} else
 		early_kprint( PL_ERROR, "read superblock failed.\n" );

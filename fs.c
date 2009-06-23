@@ -333,6 +333,12 @@ void check_root(const disk_t *disk, yfs_superblock_t *sb)
 	disk_write( disk, yfs_root_inode.i_block[0], sect );
 }
 
+static void print_dir_entry(const dir_entry_t *dentry)
+{
+	if ( !dentry ) return ;
+	early_kprint( PL_INFO, "%s\t\t%d\n", dentry->d_name, dentry->d_ino );
+}
+
 void yfs_stat(const disk_t *disk, yfs_superblock_t *sb, int ino)
 {
 	if ( !disk || !sb )
@@ -344,11 +350,41 @@ void yfs_stat(const disk_t *disk, yfs_superblock_t *sb, int ino)
 		return;
 	}
 
-	early_kprint( PL_INFO, "type: %s ", "" );
+	early_kprint( PL_INFO, "Type: " );
 	if ( inode.i_mode & FT_DIRECTORY ) {
+		early_kprint( PL_INFO, "Dir" );
+	} else if ( inode.i_mode & FT_FILE ) {
+		early_kprint( PL_INFO, "File" );
+	}
+
+	early_kprint( PL_INFO, " Size: %d", inode.i_size );
+	early_kprint( PL_INFO, " Blocks: " );
+	int i = 0;
+	for ( i = 0; i < sizeof(inode.i_block)/sizeof(inode.i_block[0]); i++ )
+		early_kprint( PL_INFO, "0x%x ", inode.i_block[i] );
+
+	if ( inode.i_mode & FT_DIRECTORY ) {
+		int num_entries = inode.i_size/sizeof(dir_entry_t);
+		int sector = 0;
+		int entries_to_read = num_entries>DIRS_PER_SECT? DIRS_PER_SECT: num_entries;
+		while ( num_entries > 0 ) {
+			unsigned char sect[512];
+			int block = sector / BLK_SIZE_IN_SECT;
+			disk_read(disk, inode.i_block[block]+sector%BLK_SIZE_IN_SECT, sect);
+
+			int i = 0;
+			dir_entry_t *entry = (dir_entry_t*)sect;
+			for ( ; i < entries_to_read; i++ ) {
+				print_dir_entry(entry);
+				entry++;
+			}
+
+			sector++;
+			num_entries -= DIRS_PER_SECT;
+			entries_to_read = num_entries>DIRS_PER_SECT? DIRS_PER_SECT: num_entries;
+		}
 		
 	} else if ( inode.i_mode & FT_FILE ) {
+		early_kprint( PL_INFO, "File" );
 	}
-	
-	
 }

@@ -14,7 +14,7 @@ enum INODE_TYPE {
 	FT_MAX          = 0xf<<24
 };
 	
-// this struct compat in 2^^3, so a sector can have 512 / 8 = 64 inodes
+// this struct compat in 2^^3, so a sector can have 512 / 8*4 = 16 inodes
 typedef struct yfs_inode_struct {
 	int i_mode;
 	int i_size;         // real size in bytes, size in blk can be calculated 
@@ -24,6 +24,7 @@ typedef struct yfs_inode_struct {
 						// the rest is inplace data blocks
 } yfs_inode_t;
 
+// 16 bytes now
 typedef struct dir_entry_struct {
 	char d_name[MAX_FILENAME_SIZE];
 	int d_ino;
@@ -65,6 +66,9 @@ typedef struct yfs_superblock_struct
 #define INODES_PER_SECT   (SECT_SIZE/sizeof(struct yfs_inode_struct))
 #define INODES_PER_BLK    (INODES_PER_SECT * BLK_SIZE_IN_SECT)
 
+#define DIRS_PER_SECT     (SECT_SIZE/sizeof(dir_entry_t))
+#define DIRS_PER_BLK      (DIRS_PER_BLK * BLK_SIZE_IN_SECT)
+
 #define YFS_ROOT_INODE_NUM 0
 
 // make it easier to calculate the offset of every section in a yfs file system
@@ -97,5 +101,6 @@ extern void yfs_free_block(const disk_t *disk, yfs_superblock_t *sb,
 						   uint32 sector);
 
 extern void check_root(const disk_t *disk, yfs_superblock_t *sb);
+extern void yfs_stat(const disk_t *disk, yfs_superblock_t *sb, int ino);
 
 #endif
