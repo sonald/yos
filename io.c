@@ -94,6 +94,7 @@ void memset(void* dest, int i, uint32 len)
 */
 }
 
+#if 0
 char* early_itos(int i, int base)
 {
 	int goon =  ( base == 2 ) || (base == 16 ) || (base == 10);
@@ -124,6 +125,50 @@ char* early_itos(int i, int base)
 		return NULL;
 	} else {
 		if ( minus ) {
+			*p++ = '-';
+			*p = '\0';
+		}
+
+		char *q = __early_buf;
+		while ( p > buf ) {
+			*q++ = *--p;
+		}
+		*q = 0;
+		return __early_buf;
+	}
+}
+#endif
+
+char* early_itos(int i, int base)
+{
+	int goon =  ( base == 2 ) || (base == 16 ) || (base == 10);
+	if ( !goon )
+		return NULL;
+
+	int minus = (i >= 0) ? 0: 1;
+	int absolute = abs(i);
+	
+	char buf[BUF_SIZE] = {0};
+	memset(__early_buf, 0, BUF_SIZE);
+	
+	uint32 divider = (base!=16?absolute: (uint32)i), remainder = 0;
+	char *p = buf;
+	*p = '0';
+	
+	do {
+		remainder = divider%base;
+		divider = divider/base;
+		*p++ = "0123456789ABCDEF"[remainder];
+	} while ( divider );
+	
+	// check overflow
+	if ( p - buf > BUF_SIZE )
+		return NULL;
+
+	if ( p == buf ) {
+		return NULL;
+	} else {
+		if ( minus && base != 16 ) {
 			*p++ = '-';
 			*p = '\0';
 		}

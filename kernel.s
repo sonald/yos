@@ -1,8 +1,10 @@
 	.section .data
+	.global _address_range_list
+	.global _num_ards
 _data:
 pm_msg:
 	.asciz "Entering Protecting Mode. \x0"
-	
+
 	.section .text
 	.globl _kernel_start
 	.code16
@@ -40,7 +42,45 @@ gdt_struct:
 	.4byte GDT_ADDRESS
 	
 _kernel_start:
-	display_str $kern_welcome, 2, 0
+.if 0
+	// move adrs to MEM_RANGE_LIST_BASE
+	push	%ds
+	mov	$MEM_RANGE_LIST_BASE_TMP>>4, %ax
+	mov	%ax, %ds
+	mov	$MEM_RANGE_LIST_BASE_TMP & 0x0f, %si
+
+	mov	$MEM_RANGE_LIST_BASE>>4, %ax
+	mov	%eax, %es
+	mov 	$MEM_RANGE_LIST_BASE & 0x0f, %di
+	
+	mov	$MEM_RANGE_SIZE_ADDRESS_TMP, %ax
+	movl	(%eax), %ecx
+	movl	$MEM_RANGE_SIZE_ADDRESS, %eax
+	movl	%ecx, (%eax)
+	imul 	$5, %cx, %cx
+	cld
+1:	
+	cmp 	$0, %cx
+	je 	1f
+	rep	movsl
+	pop	%ds
+.endif
+
+.if 0 /* test how many entries read */
+	movl 	$0xb800, %eax
+	movl 	%eax, %es
+	movl 	$(0*80 + 2)<<1, %edi
+	movl	$MEM_RANGE_SIZE_ADDRESS_TMP, %eax
+	movl	(%eax), %ebx
+	movl	%ebx, %eax
+	addb	$'a', %al
+	movb	%al, %es:(%edi)
+	inc	%edi
+	movb	$0x05, %es:(%edi)
+1:	jmp 1b
+.endif
+
+	display_str $kern_welcome, 3, 0
 	// prepare descriptors
 /*	
 	xorl	%eax, %eax
@@ -54,6 +94,7 @@ _kernel_start:
 	movb	%al, (DESC_CODE+4)
 	movb	%ah, (DESC_CODE+7)
 */
+
 .if 0
 	// prepare testing user code seg
 	xorl	%eax, %eax
@@ -76,7 +117,7 @@ _kernel_start:
 	xor	%di, %di
 	mov	$GDT_SIZE>>2, %cx
 	rep 	movsl
-	
+
 	cli
 
 enable_a20:       

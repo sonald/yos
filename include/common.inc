@@ -10,6 +10,16 @@
 	.set GDT_ENTRIES, 9
 	.set GDT_SIZE, (GDT_ENTRIES<<3)
 
+	// address range descriptor table base address,
+	// end with zero'd entry
+	// kernel first loaded at 0x8000 and size NUM_SECTORS*512
+	// so this address should beyond that 
+	.set MEM_RANGE_SIZE_ADDRESS_TMP, 0xf000
+	.set MEM_RANGE_LIST_BASE_TMP, (MEM_RANGE_SIZE_ADDRESS_TMP+4)
+
+	.set MEM_RANGE_SIZE_ADDRESS, (GDT_ADDRESS+GDT_SIZE)
+	.set MEM_RANGE_LIST_BASE, (MEM_RANGE_SIZE_ADDRESS+4)
+	
 	// descriptor attributes
 	.set DPL_0, 	0x0000
 	.set DPL_1, 	0x0020 

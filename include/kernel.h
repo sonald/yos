@@ -23,6 +23,11 @@
 #define GDT_ENTRIES        9
 #define GDT_SIZE           (GDT_ENTRIES<<3)
 
+#define MEM_RANGE_SIZE_ADDRESS (GDT_ADDRESS+GDT_SIZE)
+#define MEM_RANGE_LIST_BASE    (MEM_RANGE_SIZE_ADDRESS+4)
+#define MEM_RANGE_SIZE_ADDRESS_TMP  0xf000
+#define MEM_RANGE_LIST_BASE_TMP     (MEM_RANGE_SIZE_ADDRESS_TMP+4)
+
 #define DPL_0       0x0000
 #define DPL_1    	0x0020 
 #define DPL_2       0x0040

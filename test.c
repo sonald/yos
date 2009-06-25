@@ -44,6 +44,19 @@ void test1()
 	printf("%s(%d)\n", __early_print_buf, prted);
 }
 
+void test3()
+{
+	int i = 0xe023f49c;
+	char *cbuf = early_itos( i, 10 );
+	printf("base 10: %d: %s\n", i, cbuf);
+
+	cbuf = early_itos( i, 16 );
+	printf("base 16: %d: %s\n", i, cbuf);
+	
+	int prted = early_kprint(0, "test early_itos: i = 0x%x\n", i);
+	printf("kprint: %s(%d)\n", __early_print_buf, prted);
+}
+
 void test2()
 {
 	if ( strcmp("123", "123") != 0 )
@@ -62,6 +75,6 @@ void test2()
 
 int main(int argc, char* argv[])
 {
-	test2();
+	test3();
 	return 0;
 }
