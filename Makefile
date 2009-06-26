@@ -20,11 +20,10 @@ unittest: test.c io.c
 bootsect: bootsect.o 
 	$(LD) --oformat binary -N -o $@ -e _init -Ttext 0x7c00 $<
 
-kernel: kernel.o isr.o io.o timer.o keyboard.o task.o user.o disk.o init.o fs.o
+kernel: kernel.o isr.o io.o timer.o keyboard.o task.o user.o disk.o init.o fs.o mm.o
 	$(LD) --oformat binary -N -o $@ -e _kernel_start -Ttext 0x0000 $^
 	$(LD) -N -o $@.elf -e _kernel_start -Ttext 0x0000 $^
 	objdump -D $@.elf > kernel.img.S
-#	objcopy --only-keep-debug kernel.elf kernel.dbg
 
 kernel.o: kernel.s 
 	$(AS) -a -o $@ $< > $<.map

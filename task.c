@@ -1,6 +1,7 @@
 #include <task.h>
 #include <io.h>
 #include <timer.h>
+#include <mm.h>
 
 struct task_struct *current = NULL;
 struct task_struct task_init = {
@@ -12,7 +13,7 @@ struct task_struct task_init = {
 		.ss1 = 0,
 		.esp2 = 0x6000,
 		.ss2 = SEL_USER_DATA,
-		.cr3 = 0,
+		.cr3 = PAGE_DIR_BASE,  // all tasks will copy this which is very important
 //		.eip = (uint32)(do_init_task+18),
 		.eip = (uint32)(do_init_task),		
 //		.eip = 0,		

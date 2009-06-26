@@ -7,6 +7,8 @@
 #include <user.h>
 #include <disk.h>
 #include <fs.h>
+#include <mm.h>
+
 //////////////////////////////  testing routines  //////////////////////////////
 
 void test_io()
@@ -312,38 +314,6 @@ void setup_gdt_entry(int pos, uint32 base, uint32 limit, uint32 attrs)
 	gdt[pos] = entry;
 }
 
-
-typedef struct addr_range_desc_struct 
-{
-	uint32 baseLow;
-	uint32 baseHigh;
-	uint32 lengthLow;
-	uint32 lengthHigh;
-	uint32 type;
-} addr_range_desc_t;
-
-static void check_memory()
-{
-	static char* types[] = {
-		"Undefined", "Memory", "Reserved", "ACPI Reclaim", "ACPI NVS"
-	};
-
-	int num_ards = *(int*)MEM_RANGE_SIZE_ADDRESS_TMP;
-	addr_range_desc_t *entry = (addr_range_desc_t*)MEM_RANGE_LIST_BASE_TMP;
-	early_kprint( PL_WARN, "Memory Ranges(0x%x, %d):\n", (int)entry, num_ards );
-	early_kprint( PL_WARN, "BaseLow\t\tBaseHigh\tLenLow\t\tLenHigh\tType\n" );
-
-	int i = 0;
-	for ( ; i < num_ards; i++ ) {
-		int idx = (entry->type > 4 ? 2: entry->type);
-		early_kprint( PL_WARN, "%x\t\t%x\t%x\t\t%x\t%s\n",
-					  entry->baseLow, entry->baseHigh, entry->lengthLow,
-					  entry->lengthHigh, types[idx] );
-		++entry;
-	}
-
-}
-
 /**
  * now we switch to use c, and this is the first routine
  * seting up all ISRs and other initialization
@@ -354,7 +324,8 @@ void init()
 	cli();
 	
 	check_memory();
-	while(1);
+	init_mm();
+//	while(1);
 	
 	setup_idt();
 	init_pic();
