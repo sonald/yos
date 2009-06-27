@@ -401,6 +401,7 @@ void init()
 	early_kprint( PL_DEBUG, "MIPS: %d, IPS: %d\n", mips, ips );
 	delay(1000);
 
+	
 	cli();
 	current = &task_init;	
 	new_task( &task1, do_task1, 0x7000, 0x7800 );

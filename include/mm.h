@@ -27,6 +27,7 @@ typedef struct addr_range_list_struct
 	addr_range_desc_t ranges[0];
 } addr_range_list_t;
 
+extern unsigned long total_memory;
 
 // page dir start after memory range struture ( remain maximum of 20*20 bytes )
 //#define PAGE_DIR_BASE      ((MEM_RANGE_LIST_BASE + 20*20 + PAGE_SIZE-1) & 0xfffff000)

@@ -85,7 +85,15 @@ void do_init_task()
 
 	char wheel[] = {'\\', '|', '/', '-'};
 	int i = 0;
- 
+
+	// testing access an not-present page here
+	int step = -10;
+	for ( ; step < 10; step++ ) {
+		uint32 *mem_addr = (uint32*)(0x2000000+step);
+		early_kprint( PL_WARN, "%d: read mem_addr: %d\n", step, *mem_addr );
+	}
+	// end of test
+	
 	for (;;) {
 		__asm__ ("movb  %%al,   0xb8000+160*24"::"a"(wheel[i]));
 
