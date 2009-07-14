@@ -8,6 +8,7 @@
 #include <disk.h>
 #include <fs.h>
 #include <mm.h>
+#include <vga.h>
 
 //////////////////////////////  testing routines  //////////////////////////////
 
@@ -321,22 +322,23 @@ void setup_gdt_entry(int pos, uint32 base, uint32 limit, uint32 attrs)
 
 void init()
 {
+//	demo_graphics();
+	setup_vga_mode12();
+	
+	while(1);
 	cli();
+
+	scroll_up(10);
+	set_cursor(0,0);
 	
 	check_memory();
 	init_mm();
-//	while(1);
 	
 	setup_idt();
 	init_pic();
 
 	init_8254_timer();
 	init_kbd();
-	
-	/* setup_gdt_entry(SEL_USER_CODE>>3, 0UL, 0xffffUL, (F_USER32_CODE)); */
-	/* setup_gdt_entry(SEL_USER_DATA>>3, 0UL, 0xffffUL, (F_USER32_DATA)); */
-	/* default_ldt[0] = gdt[SEL_USER_CODE>>3]; */
-	/* default_ldt[1] = gdt[SEL_USER_DATA>>3]; */
 	
 	//for init task's TSS & LDT
 	setup_gdt_entry((SEL_CUR_TSS>>3), (uint32)&task_init.tss, 0x67UL, (F_USER32_TSS));
@@ -345,12 +347,7 @@ void init()
 	__asm__ ( "ltrw %%ax \n\t" ::"a"(SEL_CUR_TSS) );
 	__asm__ ( "lldt %%ax \n\t" ::"a"(SEL_CUR_LDT) );
 
-	/* unsigned char imf = inb(0x21); */
-	/* outb( imf & 0xfb, 0x21 ); */
-	/* imf = inb(0xa1); */
-	/* outb( imf & 0x0, 0xa1 ); */
-
-#if 0	
+#if 0
 	if ( read_dpt(&tmp_hd0) < 0 ) {
 		setup_dpt(&tmp_hd0);
 		read_dpt(&tmp_hd0);
@@ -401,7 +398,6 @@ void init()
 	early_kprint( PL_DEBUG, "MIPS: %d, IPS: %d\n", mips, ips );
 	delay(1000);
 
-	
 	cli();
 	current = &task_init;	
 	new_task( &task1, do_task1, 0x7000, 0x7800 );

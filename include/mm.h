@@ -48,8 +48,17 @@ extern unsigned long total_memory;
 #define PG_Dirty        0x0040
 /* bit 0x0080, clear for 4k */
 #define PG_PS_4K        0x0000
+#define PG_PS_OTHER     0x0080
 #define PG_PAT          0x0000
 #define PG_Global       0x1000
+
+extern void alloc_vm_page();
+
+/**
+ * 
+ */
+extern void* vkmalloc(uint32 size);
+extern void kfree(void* base);
 
 extern void check_memory();
 /**

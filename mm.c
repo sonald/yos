@@ -36,9 +36,10 @@ void setup_default_page_table()
 	for ( i = 0; i < num_total_table; i++ ) {
 		page_dir[i] = (uint32)page_table + i*PAGE_SIZE + (PG_P | PG_US_USER | PG_RW);
 	}
-	// not present
+	// not present, so their point to zero address
 	for ( ; i < 1024; i++ ) {
-		page_dir[i] = (uint32)page_table + i*PAGE_SIZE + (PG_US_USER | PG_RW);
+//		page_dir[i] = (uint32)page_table + i*PAGE_SIZE + (PG_US_USER | PG_RW);
+		page_dir[i] = (uint32)(PG_US_USER | PG_RW);		
 	}
 	
 	for ( i = 0; i < num_total_table*(1<<10); i++ ) {
